@@ -4438,6 +4438,11 @@ endpoints for further error messages. Common errors are:</p>
   other. If relays are disabled (<code>relays = "none"</code>), the endpoints can only
   connect directly. If discovery is unavailable, an endpoint can only reach
   peers whose addresses are cached in its <code>peer-addrs.json</code> file.</li>
+<li><strong>Peer ... did not send or receive any data for ... seconds</strong>: The remote
+  endpoint stopped responding to a request (e.g., it is overloaded or
+  stuck). Check the log of the remote endpoint, and increase the
+  <code>request_timeout</code> in the <code>[p2p]</code> section of the configuration if the
+  remote endpoint is only slow.</li>
 <li><strong>Endpoint returned TOO_LARGE for SET request: Peer ...</strong>: The object is
   larger than the <code>max_object_size</code> of the remote endpoint.</li>
 </ul>

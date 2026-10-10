@@ -2174,6 +2174,17 @@
   
 </li>
       
+        <li class="md-nav__item">
+  <a href="#proxystore.endpoint.exceptions.PeerRequestTimeoutError" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        <code class="doc-symbol doc-symbol-toc doc-symbol-class"></code>&nbsp;PeerRequestTimeoutError
+      
+    </span>
+  </a>
+  
+</li>
+      
     </ul>
   
 </nav>
@@ -4375,6 +4386,17 @@
   
 </li>
       
+        <li class="md-nav__item">
+  <a href="#proxystore.endpoint.exceptions.PeerRequestTimeoutError" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        <code class="doc-symbol doc-symbol-toc doc-symbol-class"></code>&nbsp;PeerRequestTimeoutError
+      
+    </span>
+  </a>
+  
+</li>
+      
     </ul>
   
 </nav>
@@ -4509,7 +4531,8 @@
 </span><span id="__span-0-16"><a id="__codelineno-0-16" name="__codelineno-0-16" href="#__codelineno-0-16"></a>        ├── PeeringDisabledError
 </span><span id="__span-0-17"><a id="__codelineno-0-17" name="__codelineno-0-17" href="#__codelineno-0-17"></a>        ├── PeerNotAllowedError
 </span><span id="__span-0-18"><a id="__codelineno-0-18" name="__codelineno-0-18" href="#__codelineno-0-18"></a>        └── PeerUnavailableError
-</span><span id="__span-0-19"><a id="__codelineno-0-19" name="__codelineno-0-19" href="#__codelineno-0-19"></a>            └── PeerConnectionTimeoutError
+</span><span id="__span-0-19"><a id="__codelineno-0-19" name="__codelineno-0-19" href="#__codelineno-0-19"></a>            ├── PeerConnectionTimeoutError
+</span><span id="__span-0-20"><a id="__codelineno-0-20" name="__codelineno-0-20" href="#__codelineno-0-20"></a>            └── PeerRequestTimeoutError
 </span></code></pre></div>
 <p>Some exceptions also derive from a built-in exception so they can be caught
 as either (e.g., an invalid configuration is also a <code>ValueError</code>).</p>
@@ -5155,6 +5178,43 @@ succeed.</p>
 
         <p>Exception raised when connecting to a peer times out.</p>
 <p>Clients receive a
+<a class="autorefs autorefs-internal" title="            PeerUnavailableError" href="#proxystore.endpoint.exceptions.PeerUnavailableError"><code>PeerUnavailableError</code></a>
+rather than this more specific exception.</p>
+
+
+
+
+
+
+
+
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-class">
+
+
+
+<h2 id="proxystore.endpoint.exceptions.PeerRequestTimeoutError" class="doc doc-heading">
+<code class="doc-symbol doc-symbol-heading doc-symbol-class"></code>            <span class="doc doc-object-name doc-class-name">PeerRequestTimeoutError</span>
+
+
+<a href="#proxystore.endpoint.exceptions.PeerRequestTimeoutError" class="headerlink" title="Permanent link">&para;</a></h2>
+
+
+    <div class="doc doc-contents ">
+            <p class="doc doc-class-bases">
+              Bases: <code><a class="autorefs autorefs-internal" title="            PeerUnavailableError (proxystore.endpoint.exceptions.PeerUnavailableError)" href="#proxystore.endpoint.exceptions.PeerUnavailableError">PeerUnavailableError</a></code></p>
+
+
+
+        <p>Exception raised when a request to a peer stops making progress.</p>
+<p>The request is abandoned if no data is sent to or received from the
+peer for the request timeout (see
+<a class="autorefs autorefs-internal" title="            EndpointP2PConfig" href="../config/#proxystore.endpoint.config.EndpointP2PConfig"><code>EndpointP2PConfig</code></a>).
+Clients receive a
 <a class="autorefs autorefs-internal" title="            PeerUnavailableError" href="#proxystore.endpoint.exceptions.PeerUnavailableError"><code>PeerUnavailableError</code></a>
 rather than this more specific exception.</p>
 

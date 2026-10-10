@@ -4323,7 +4323,8 @@ is stored separately in the <code>secret.key</code> file which only the owner ca
 <span class="normal"><a href="#__codelineno-2-13">13</a></span>
 <span class="normal"><a href="#__codelineno-2-14">14</a></span>
 <span class="normal"><a href="#__codelineno-2-15">15</a></span>
-<span class="normal"><a href="#__codelineno-2-16">16</a></span></pre></div></td><td class="code"><div><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1"></a><span class="n">version</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">1</span><span class="w">  </span><span class="c1"># (1)!</span>
+<span class="normal"><a href="#__codelineno-2-16">16</a></span>
+<span class="normal"><a href="#__codelineno-2-17">17</a></span></pre></div></td><td class="code"><div><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1"></a><span class="n">version</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">1</span><span class="w">  </span><span class="c1"># (1)!</span>
 </span><span id="__span-2-2"><a id="__codelineno-2-2" name="__codelineno-2-2"></a><span class="n">name</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"my-endpoint"</span><span class="w">  </span><span class="c1"># (2)!</span>
 </span><span id="__span-2-3"><a id="__codelineno-2-3" name="__codelineno-2-3"></a><span class="n">id</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"ed924cda74a1f625ea4e34bc7f3d4759f298b1a950dc41f87484d24023757173"</span><span class="w">  </span><span class="c1"># (3)!</span>
 </span><span id="__span-2-4"><a id="__codelineno-2-4" name="__codelineno-2-4"></a><span class="n">port</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">8765</span><span class="w">  </span><span class="c1"># (4)!</span>
@@ -4335,10 +4336,11 @@ is stored separately in the <code>secret.key</code> file which only the owner ca
 </span><span id="__span-2-10"><a id="__codelineno-2-10" name="__codelineno-2-10"></a><span class="n">enabled</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="kc">true</span><span class="w">  </span><span class="c1"># (8)!</span>
 </span><span id="__span-2-11"><a id="__codelineno-2-11" name="__codelineno-2-11"></a><span class="n">relays</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"n0"</span><span class="w">  </span><span class="c1"># (9)!</span>
 </span><span id="__span-2-12"><a id="__codelineno-2-12" name="__codelineno-2-12"></a><span class="n">discovery</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"n0"</span><span class="w">  </span><span class="c1"># (10)!</span>
-</span><span id="__span-2-13"><a id="__codelineno-2-13" name="__codelineno-2-13"></a>
-</span><span id="__span-2-14"><a id="__codelineno-2-14" name="__codelineno-2-14"></a><span class="k">[storage]</span>
-</span><span id="__span-2-15"><a id="__codelineno-2-15" name="__codelineno-2-15"></a><span class="n">backend</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"sqlite"</span><span class="w">  </span><span class="c1"># (11)!</span>
-</span><span id="__span-2-16"><a id="__codelineno-2-16" name="__codelineno-2-16"></a><span class="n">database_path</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"blobs.db"</span><span class="w">  </span><span class="c1"># (12)!</span>
+</span><span id="__span-2-13"><a id="__codelineno-2-13" name="__codelineno-2-13"></a><span class="n">request_timeout</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">60</span><span class="w">  </span><span class="c1"># (11)!</span>
+</span><span id="__span-2-14"><a id="__codelineno-2-14" name="__codelineno-2-14"></a>
+</span><span id="__span-2-15"><a id="__codelineno-2-15" name="__codelineno-2-15"></a><span class="k">[storage]</span>
+</span><span id="__span-2-16"><a id="__codelineno-2-16" name="__codelineno-2-16"></a><span class="n">backend</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"sqlite"</span><span class="w">  </span><span class="c1"># (12)!</span>
+</span><span id="__span-2-17"><a id="__codelineno-2-17" name="__codelineno-2-17"></a><span class="n">database_path</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"blobs.db"</span><span class="w">  </span><span class="c1"># (13)!</span>
 </span></code></pre></div></td></tr></table></div>
 <ol>
 <li>Format version of the configuration file. ProxyStore uses this to detect
@@ -4364,6 +4366,9 @@ is stored separately in the <code>secret.key</code> file which only the owner ca
 <li>Relays used to connect to peers. See <a href="#relays">Relays</a>.</li>
 <li>Discovery service used to find the addresses of peers. See
     <a href="#relays">Relays</a>.</li>
+<li>Seconds a request to or from a peer can go without sending or receiving
+    any data before it is abandoned, so a stuck peer does not hang
+    requests. Defaults to 60 if omitted. Set to <code>0</code> to disable the timeout.</li>
 <li>Storage backend. <code>"memory"</code> (the default) stores objects in memory, and
     <code>"sqlite"</code> persists objects to a SQLite database. See the tip below for
     more details.</li>
@@ -4570,7 +4575,12 @@ so a stuck endpoint does not hang the client. Large objects do not time out
 while the data keeps moving, but the timeout includes the time the endpoint
 spends handling a request (e.g., writing a large object to its storage).
 Requests for objects on peers are not timed out by the connector because the
-home endpoint only responds once the peer does. The connector also enables TCP keepalive so a home endpoint whose host
+home endpoint only responds once the peer does. Instead, the home endpoint
+abandons a request to a peer which sends or receives no data for the
+<code>request_timeout</code> in the <code>[p2p]</code> section of its configuration (60 seconds by
+default), and the request fails with a
+<a class="autorefs autorefs-internal" title="            PeerUnavailableError" href="../../api/endpoint/exceptions/#proxystore.endpoint.exceptions.PeerUnavailableError"><code>PeerUnavailableError</code></a>.
+The connector also enables TCP keepalive so a home endpoint whose host
 disappeared is detected even between requests.</p>
 <div class="language-python highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-9-1">1</a></span></pre></div></td><td class="code"><div><pre><span></span><code><span id="__span-9-1"><a id="__codelineno-9-1" name="__codelineno-9-1"></a><span class="n">connector</span> <span class="o">=</span> <span class="n">EndpointConnector</span><span class="p">(</span><span class="n">request_timeout</span><span class="o">=</span><span class="mi">120</span><span class="p">)</span>  <span class="c1"># (1)!</span>
 </span></code></pre></div></td></tr></table></div>
