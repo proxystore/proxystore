@@ -76,7 +76,7 @@ docs = [
     "mkdocs-literate-nav==0.6.3",
     "mkdocs-material==9.7.7",
     "mkdocs-section-index==0.3.12",
-    "mkdocstrings==1.0.6",
+    "mkdocstrings==1.0.7",
     "mkdocstrings-python==2.0.9",
     "mike==2.2.0",
     # Used by mkdocstrings to format signatures
