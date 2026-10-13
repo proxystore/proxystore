@@ -236,6 +236,8 @@ ignore = [
     "D105",
     # Do not require docstrings for __init__ methods
     "D107",
+    # Do not require unconventional imports styles (e.g., datetime as dt)
+    "ICN001",
 ]
 
 [tool.ruff.lint.flake8-pytest-style]
