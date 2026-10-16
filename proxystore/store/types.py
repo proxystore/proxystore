@@ -10,7 +10,7 @@ from typing import TypeVar
 from proxystore.connectors.protocols import Connector
 from proxystore.serialize import BytesLike
 
-ConnectorT = TypeVar('ConnectorT', bound=Connector[Any])
+ConnectorT = TypeVar('ConnectorT', bound=Connector[Any], covariant=True)
 """Connector type variable."""
 ConnectorKeyT = tuple[Any, ...]
 """Connector key type alias."""

@@ -1,12 +1,17 @@
 from __future__ import annotations
 
+import pathlib
 import threading
 from typing import Any
+from typing import assert_type
 from unittest import mock
 
 import pytest
 
+from proxystore.connectors.file import FileConnector
+from proxystore.connectors.file import FileKey
 from proxystore.connectors.local import LocalConnector
+from proxystore.connectors.local import LocalKey
 from proxystore.proxy import Proxy
 from proxystore.proxy import ProxyResolveError
 from proxystore.proxy import resolve
@@ -19,6 +24,7 @@ from proxystore.store.future import PollingPolicy
 from proxystore.store.future import ProxyFuture
 from proxystore.store.lifetimes import ContextLifetime
 from proxystore.store.types import CacheModeT
+from proxystore.store.utils import get_key
 
 
 def test_negative_cache_size() -> None:
@@ -474,3 +480,24 @@ def test_cache_mode_config() -> None:
         assert config.cache_mode == 'bytes'
         with Store.from_config(config) as other:
             assert other._cache_mode == 'bytes'
+
+
+def test_key_types(tmp_path: pathlib.Path) -> None:
+    # Checked by mypy: keys have the key type of the store's connector.
+    with Store(FileConnector(tmp_path)) as store:
+        key = assert_type(store.put('a'), FileKey)
+        keys = assert_type(store.put_batch(['b']), list[FileKey])
+        assert isinstance(key, FileKey)
+        assert store.get_batch([key, *keys]) == ['a', 'b']
+
+        # A key of a different connector is a type error.
+        with pytest.raises(AttributeError):
+            store.exists(LocalKey('other'))  # type: ignore[arg-type]
+
+        # The connector of a proxy's store is not known, so its key is Any.
+        proxy: Proxy[str] = store.proxy('c')
+        assert store.get(assert_type(get_key(proxy), Any)) == 'c'
+
+        # Stores with any connector can be used as Store[Any].
+        generic: Store[Any] = store
+        assert_type(generic.put('d'), Any)

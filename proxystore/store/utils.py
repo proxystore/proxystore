@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from typing import Any
 from typing import TypeVar
 
 from proxystore.proxy import get_factory
@@ -9,12 +10,11 @@ from proxystore.proxy import is_resolved
 from proxystore.proxy import Proxy
 from proxystore.store import base
 from proxystore.store.exceptions import ProxyStoreFactoryError
-from proxystore.store.types import ConnectorKeyT
 
 T = TypeVar('T')
 
 
-def get_key(proxy: Proxy[T]) -> ConnectorKeyT:
+def get_key(proxy: Proxy[T]) -> Any:
     """Extract the key from the proxy's factory.
 
     Args:
@@ -22,7 +22,9 @@ def get_key(proxy: Proxy[T]) -> ConnectorKeyT:
 
     Returns:
         The key, a NamedTuple unique to the \
-        [`Store`][proxystore.store.base.Store] that created the proxy..
+        [`Store`][proxystore.store.base.Store] that created the proxy. \
+        The key is typed `Any` because the type of the store's connector \
+        is not known from the proxy.
 
     Raises:
         ProxyStoreFactoryError: If the proxy's factory is not an instance of

@@ -12,11 +12,7 @@ from typing import Any
 from typing import Protocol
 from typing import runtime_checkable
 from typing import TypeAlias
-
-if sys.version_info >= (3, 12):  # pragma: >=3.12 cover
-    from typing import TypeGuard
-else:  # pragma: <3.12 cover
-    from typing import TypeGuard
+from typing import TypeGuard
 
 import cloudpickle
 
