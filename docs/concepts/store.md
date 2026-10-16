@@ -78,9 +78,17 @@ multiple proxies refer to the same object.
 ```python linenums="1"
 from proxystore.store import Store
 
-# Cache size of 16 is the default
-Store(..., cache_size=16)
+# 256 MiB is the default
+Store(..., cache_size_bytes=256 * 1024 * 1024)
 ```
+
+The cache size is in bytes, and each entry counts as the size of the object's serialized data.
+When the cache is full, the least recently used objects are removed, and an object larger than the cache is not cached.
+Set `#!python cache_size_bytes=0` to turn off the cache.
+The cache is per process, so with many worker processes on a node, the cache can use up to `cache_size_bytes` in each of them.
+
+With the default cache mode (described below), the serialized size is an estimate of the memory used by the cached object.
+It is close for objects like bytes and NumPy arrays, but Python objects such as dicts and lists can use several times more memory than their serialized data.
 
 By default, the cache holds deserialized objects, so a cache hit is free, but every [`get()`][proxystore.store.base.Store.get] and every proxy of the same key in a process share one object.
 Changing that object (e.g., appending to a list) changes it for all of them.

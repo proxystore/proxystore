@@ -17,5 +17,5 @@ def store() -> Generator[Store[LocalConnector], None, None]:
     The yielded store is initialized with a LocalConnector meaning that
     it is only suitable for use within a single process.
     """
-    with Store(LocalConnector(), cache_size=0) as store:
+    with Store(LocalConnector(), cache_size_bytes=0) as store:
         yield store

@@ -11,13 +11,14 @@ from __future__ import annotations
 import threading
 from collections import OrderedDict
 from concurrent.futures import Future
-from typing import cast
 from typing import Generic
 from typing import TypeVar
 
 KeyT = TypeVar('KeyT')
 ValueT = TypeVar('ValueT')
-_MISSING_OBJECT = object()
+
+DEFAULT_CACHE_SIZE_BYTES = 256 * 1024 * 1024
+"""Default maximum size of a cache in bytes (256 MiB)."""
 
 
 class LRUCache(Generic[KeyT, ValueT]):
@@ -31,24 +32,31 @@ class LRUCache(Generic[KeyT, ValueT]):
     call [`start()`][proxystore.store.cache.LRUCache.start] for the key in
     the meantime get the same future to wait on.
 
+    The size of each value is given to
+    [`finish()`][proxystore.store.cache.LRUCache.finish], and the least
+    recently used values are removed while the total size is more than
+    `max_bytes`.
+
     Args:
-        maxsize: Maximum number of values to cache. If 0, values are not
-            cached once finished, but threads still share a value while it
-            is being filled in.
+        max_bytes: Maximum total size of the cached values in bytes. A value
+            larger than this is not cached. If 0, values are not cached once
+            finished, but threads still share a value while it is being
+            filled in.
 
     Raises:
-        ValueError: If `maxsize < 0`.
+        ValueError: If `max_bytes < 0`.
     """
 
-    def __init__(self, maxsize: int = 16) -> None:
-        if maxsize < 0:
+    def __init__(self, max_bytes: int = DEFAULT_CACHE_SIZE_BYTES) -> None:
+        if max_bytes < 0:
             raise ValueError('Cache size must be >= 0')
-        self.maxsize = maxsize
+        self.max_bytes = max_bytes
+        self.size_bytes = 0
         self.hits = 0
         self.misses = 0
 
-        # Values, least recently used first.
-        self._values: OrderedDict[KeyT, ValueT] = OrderedDict()
+        # Values and their sizes, least recently used first.
+        self._values: OrderedDict[KeyT, tuple[ValueT, int]] = OrderedDict()
         # Futures of values being filled in and the ID of the thread
         # filling in each one.
         self._pending: dict[KeyT, tuple[Future[ValueT], int]] = {}
@@ -70,8 +78,14 @@ class LRUCache(Generic[KeyT, ValueT]):
         finished. Threads waiting on it still get the value.
         """
         with self._lock:
-            self._values.pop(key, None)
+            self._remove(key)
             self._pending.pop(key, None)
+
+    def _remove(self, key: KeyT) -> None:
+        # Remove a cached value. The caller must hold the lock.
+        item = self._values.pop(key, None)
+        if item is not None:
+            self.size_bytes -= item[1]
 
     def exists(self, key: KeyT) -> bool:
         """Check if the value of a key is cached."""
@@ -86,11 +100,11 @@ class LRUCache(Generic[KeyT, ValueT]):
             being filled in.
         """
         with self._lock:
-            value = self._values.get(key, _MISSING_OBJECT)
-            if value is not _MISSING_OBJECT:
+            item = self._values.get(key)
+            if item is not None:
                 self._values.move_to_end(key)
                 self.hits += 1
-                return cast(ValueT, value)
+                return item[0]
             self.misses += 1
         return default
 
@@ -113,10 +127,10 @@ class LRUCache(Generic[KeyT, ValueT]):
         future: Future[ValueT] = Future()
         thread = threading.get_ident()
         with self._lock:
-            value = self._values.get(key, _MISSING_OBJECT)
-            if value is not _MISSING_OBJECT:
+            item = self._values.get(key)
+            if item is not None:
                 self._values.move_to_end(key)
-                future.set_result(cast(ValueT, value))
+                future.set_result(item[0])
                 return future, False
 
             pending = self._pending.get(key)
@@ -133,24 +147,35 @@ class LRUCache(Generic[KeyT, ValueT]):
         future: Future[ValueT],
         value: ValueT,
         *,
+        size: int,
         cache: bool = True,
     ) -> None:
         """Finish filling in a value.
 
         Threads waiting on the value get it. The value is cached if `cache`
-        is `True` and the value was not
+        is `True`, `size` is at most `max_bytes`, and the value was not
         [evicted][proxystore.store.cache.LRUCache.evict] while it was being
         filled in.
+
+        Args:
+            key: Key of the value.
+            future: Future returned by
+                [`start()`][proxystore.store.cache.LRUCache.start].
+            value: Value of the key.
+            size: Size of the value in bytes.
+            cache: Cache the value.
         """
         with self._lock:
             pending = self._pending.get(key)
             if pending is not None and pending[0] is future:
                 del self._pending[key]
-                if cache and self.maxsize > 0:
-                    self._values[key] = value
-                    self._values.move_to_end(key)
-                    if len(self._values) > self.maxsize:
-                        self._values.popitem(last=False)
+                if cache and self.max_bytes > 0 and size <= self.max_bytes:
+                    self._remove(key)
+                    self._values[key] = (value, size)
+                    self.size_bytes += size
+                    while self.size_bytes > self.max_bytes:
+                        _, (_, removed) = self._values.popitem(last=False)
+                        self.size_bytes -= removed
         future.set_result(value)
 
     def fail(

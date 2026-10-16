@@ -26,6 +26,7 @@ from proxystore.proxy import ProxyLocker
 from proxystore.serialize import BytesLike
 from proxystore.serialize import is_bytes_like
 from proxystore.serialize import SerializationError
+from proxystore.store.cache import DEFAULT_CACHE_SIZE_BYTES
 from proxystore.store.cache import LRUCache
 from proxystore.store.config import ConnectorConfig
 from proxystore.store.config import StoreConfig
@@ -159,8 +160,12 @@ class Store(Generic[ConnectorT]):
             used. The serializer and deserializer are part of the
             [`config()`][proxystore.store.base.Store.config] of the store,
             so they must be importable in other processes.
-        cache_size: Size of LRU cache (in # of objects). If 0,
-            the cache is disabled. The cache is local to the Python process.
+        cache_size_bytes: Maximum size of the LRU cache in bytes (256 MiB
+            by default). Each entry counts as the size of the object's
+            serialized data, so with the `'objects'` cache mode this is an
+            estimate of the memory used. Objects larger than this are not
+            cached. If 0, the cache is disabled. The cache is local to the
+            Python process.
         cache_mode: What the cache holds. With `'objects'`, the cache holds
             deserialized objects, so a cache hit is free but every
             [`get()`][proxystore.store.base.Store.get] and proxy of a key in
@@ -179,7 +184,7 @@ class Store(Generic[ConnectorT]):
             proxy is resolved in another process, are never owners.
 
     Raises:
-        ValueError: If `cache_size` is less than zero or `cache_mode` is
+        ValueError: If `cache_size_bytes` is less than zero or `cache_mode` is
             not `'objects'` or `'bytes'`.
     """  # noqa: E501
 
@@ -190,7 +195,7 @@ class Store(Generic[ConnectorT]):
         name: str | None = None,
         serializer: SerializerT | None = None,
         deserializer: DeserializerT | None = None,
-        cache_size: int = 16,
+        cache_size_bytes: int = DEFAULT_CACHE_SIZE_BYTES,
         cache_mode: CacheModeT = 'objects',
         metrics: bool = False,
         populate_target: bool = True,
@@ -200,9 +205,9 @@ class Store(Generic[ConnectorT]):
         # _id is private and only used by from_config() to recreate a store
         # with the same ID. Users should not set it because stores with the
         # same ID are considered the same store.
-        if cache_size < 0:
+        if cache_size_bytes < 0:
             raise ValueError(
-                f'Cache size cannot be negative. Got {cache_size}.',
+                f'Cache size cannot be negative. Got {cache_size_bytes}.',
             )
         if cache_mode not in ('objects', 'bytes'):
             raise ValueError(
@@ -211,11 +216,13 @@ class Store(Generic[ConnectorT]):
             )
 
         self.connector = connector
-        self.cache: LRUCache[ConnectorKeyT, Any] = LRUCache(cache_size)
+        self.cache: LRUCache[ConnectorKeyT, Any] = LRUCache(
+            cache_size_bytes,
+        )
         self._id = _id if _id is not None else uuid.uuid4().hex
         self._name = name
         self._metrics = StoreMetrics() if metrics else None
-        self._cache_size = cache_size
+        self._cache_size_bytes = cache_size_bytes
         self._cache_mode = cache_mode
         self._serializer = serializer
         self._deserializer = deserializer
@@ -394,7 +401,7 @@ class Store(Generic[ConnectorT]):
             ),
             serializer=self._serializer,
             deserializer=self._deserializer,
-            cache_size=self._cache_size,
+            cache_size_bytes=self._cache_size_bytes,
             cache_mode=self._cache_mode,
             metrics=self.metrics is not None,
             populate_target=self._populate_target,
@@ -443,7 +450,7 @@ class Store(Generic[ConnectorT]):
             name=config.name,
             serializer=config.serializer,
             deserializer=config.deserializer,
-            cache_size=config.cache_size,
+            cache_size_bytes=config.cache_size_bytes,
             cache_mode=config.cache_mode,
             metrics=config.metrics,
             populate_target=config.populate_target,
@@ -807,11 +814,13 @@ class Store(Generic[ConnectorT]):
         value: BytesLike | None,
     ) -> None:
         # Missing objects are not cached. With the bytes cache mode, the
-        # serialized data is cached instead of the object.
+        # serialized data is cached instead of the object. Either way, the
+        # size of the entry is the size of the serialized data.
         cache = result is not _MISSING_OBJECT
+        size = 0 if value is None else memoryview(value).nbytes
         if cache and self._cache_mode == 'bytes':
             result = value
-        self.cache.finish(key, future, result, cache=cache)
+        self.cache.finish(key, future, result, size=size, cache=cache)
 
     def _start_batch(
         self,

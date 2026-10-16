@@ -101,7 +101,7 @@ def test_store_config_from_toml(tmp_path: pathlib.Path) -> None:
     with open(config_file, 'w') as f:
         f.write(f"""\
 name = "test"
-cache_size = 0
+cache_size_bytes = 0
 metrics = true
 populate_target = false
 
@@ -113,7 +113,7 @@ options = {{ store_dir = "{store_dir}" }}
     config = StoreConfig.from_toml(config_file)
     assert config.id is None
     assert config.name == 'test'
-    assert config.cache_size == 0
+    assert config.cache_size_bytes == 0
     assert config.metrics
     assert not config.populate_target
 
@@ -131,7 +131,7 @@ def test_store_config_write_toml(tmp_path: pathlib.Path) -> None:
             kind='file',
             options={'store_dir': str(store_dir)},
         ),
-        cache_size=0,
+        cache_size_bytes=0,
         metrics=True,
         populate_target=False,
     )

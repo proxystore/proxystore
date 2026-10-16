@@ -30,7 +30,7 @@ def store(
 ) -> Generator[Store[FileConnector], None, None]:
     with Store(
         FileConnector(tmp_path),
-        cache_size=0,
+        cache_size_bytes=0,
         populate_target=False,
     ) as store:
         yield store

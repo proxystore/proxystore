@@ -61,7 +61,7 @@ class _Future(Future[Any]):
 
 @contextlib.contextmanager
 def blocking_store(
-    cache_size: int = 0,
+    cache_size_bytes: int = 0,
     cache_mode: CacheModeT = 'objects',
 ) -> Generator[tuple[Store[LocalConnector], Blocker], None, None]:
     _Future.waiting.clear()
@@ -73,7 +73,7 @@ def blocking_store(
         mock.patch('proxystore.store.cache.Future', _Future),
         Store(
             connector,
-            cache_size=cache_size,
+            cache_size_bytes=cache_size_bytes,
             cache_mode=cache_mode,
         ) as store,
     ):
@@ -99,7 +99,7 @@ def test_get_different_keys_at_same_time() -> None:
 
     with (
         mock.patch.object(connector, 'get', _get),
-        Store(connector, cache_size=0) as store,
+        Store(connector, cache_size_bytes=0) as store,
     ):
         keys = [store.put(i) for i in range(2)]
         with ThreadPoolExecutor(2) as pool:
@@ -176,7 +176,7 @@ def test_get_waiter_gets_fetch_error() -> None:
 
 @pytest.mark.parametrize('method', ('evict', 'set'))
 def test_change_during_fetch_not_cached(method: str) -> None:
-    with blocking_store(cache_size=16) as (store, blocker):
+    with blocking_store(cache_size_bytes=1024) as (store, blocker):
         key = store.put('old')
 
         get = _start(store.get, key)
@@ -267,7 +267,7 @@ def test_get_batch_deserializer_error_finishes_other_keys() -> None:
 
 
 def test_store_after_fork() -> None:
-    with blocking_store(cache_size=16) as (store, blocker):
+    with blocking_store(cache_size_bytes=1024) as (store, blocker):
         key = store.put('value')
 
         # Another thread is fetching the key and using the cache when the

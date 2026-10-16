@@ -12,16 +12,18 @@ from proxystore.proxy import ProxyResolveError
 from proxystore.proxy import resolve
 from proxystore.serialize import BytesLike
 from proxystore.serialize import SerializationError
+from proxystore.serialize import serialize
 from proxystore.store import Store
 from proxystore.store.exceptions import ProxyResolveMissingKeyError
 from proxystore.store.future import PollingPolicy
 from proxystore.store.future import ProxyFuture
 from proxystore.store.lifetimes import ContextLifetime
+from proxystore.store.types import CacheModeT
 
 
 def test_negative_cache_size() -> None:
     with pytest.raises(ValueError, match='Cache size cannot be negative'):
-        Store(LocalConnector(), cache_size=-1)
+        Store(LocalConnector(), cache_size_bytes=-1)
 
 
 def test_invalid_cache_mode() -> None:
@@ -72,16 +74,18 @@ def test_operations_on_missing_key(store: Store[LocalConnector]) -> None:
 
 
 def test_caching() -> None:
-    with Store(LocalConnector(), cache_size=0) as store:
-        assert store.cache.maxsize == 0
-        value = 'test_value'
+    value = 'test_value'
+    size = len(serialize(value))
+
+    with Store(LocalConnector(), cache_size_bytes=0) as store:
+        assert store.cache.max_bytes == 0
 
         # Test cache size 0
         key1 = store.put(value)
         assert store.get(key1) == value
         assert not store.is_cached(key1)
 
-    with Store(LocalConnector(), cache_size=1) as store:
+    with Store(LocalConnector(), cache_size_bytes=size) as store:
         # Add our test value
         key1 = store.put(value)
 
@@ -101,10 +105,41 @@ def test_caching() -> None:
         assert store.is_cached(key1)
         assert not store.is_cached(key2)
 
-        # Check cached value flipped since cache size is 1
+        # Check cached value flipped since the cache fits one value
         assert store.get(key2) == value
         assert not store.is_cached(key1)
         assert store.is_cached(key2)
+
+
+def test_cache_skips_objects_larger_than_cache() -> None:
+    small, large = 'a', 'b' * 100
+    size = len(serialize(small))
+    with Store(LocalConnector(), cache_size_bytes=size) as store:
+        key = store.put(small)
+        store.get(key)
+        assert store.cache.size_bytes == size
+
+        large_key = store.put(large)
+        assert store.get(large_key) == large
+        assert store.get_batch([large_key]) == [large]
+        assert not store.is_cached(large_key)
+        assert store.is_cached(key)
+
+
+@pytest.mark.parametrize('cache_mode', ('objects', 'bytes'))
+def test_cache_size_uses_serialized_size(cache_mode: CacheModeT) -> None:
+    # The size of an entry is the number of bytes in the serialized data,
+    # even when the connector returns a memoryview with larger items.
+    data = b'x' * 64
+    view = memoryview(data).cast('Q')
+    connector = LocalConnector()
+    with (
+        Store(connector, deserializer=bytes, cache_mode=cache_mode) as store,
+        mock.patch.object(connector, 'get', return_value=view),
+    ):
+        key = store.put('a')
+        assert store.get(key) == data
+        assert store.cache.size_bytes == len(data)
 
 
 def test_custom_serializer() -> None:
@@ -202,7 +237,7 @@ def test_put_batch(store: Store[LocalConnector]) -> None:
 
 
 def test_set() -> None:
-    with Store(LocalConnector(), cache_size=1) as store:
+    with Store(LocalConnector()) as store:
         key = store.connector.new_key()
         assert not store.exists(key)
         store._set(key, 'test_value')
@@ -353,7 +388,8 @@ def test_get_batch_error_while_starting() -> None:
 
 
 def test_store_get_batch_repeated_key_cache() -> None:
-    with Store(LocalConnector(), cache_size=2) as store:
+    size = len(serialize('a'))
+    with Store(LocalConnector(), cache_size_bytes=2 * size) as store:
         key = store.put('a')
         assert store.get_batch([key, key]) == ['a', 'a']
         store.evict(key)
