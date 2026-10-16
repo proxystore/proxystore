@@ -76,7 +76,9 @@ Connectors differ in who can read and write their objects.
 
 * [`LocalConnector`][proxystore.connectors.local.LocalConnector]: only the current process.
 * [`FileConnector`][proxystore.connectors.file.FileConnector]: anyone with access to the directory.
-  The directory is created with the default permissions of your [umask](https://en.wikipedia.org/wiki/Umask){target=_blank}, which often lets other users read it, so use a directory that only you can access on shared systems.
+  If the connector creates the directory, only you can access it and its files by default (`#!python dir_mode=0o700, file_mode=0o600`).
+  Set `#!python dir_mode=0o770, file_mode=0o660` to share objects with a group.
+  A directory that already exists keeps its permissions, so check them before using an existing directory on a shared system.
 * [`RedisConnector`][proxystore.connectors.redis.RedisConnector]: anyone who can connect to the Redis server.
   The connector does not use a password or TLS, so only use it with a Redis server on a trusted network.
 * [`ZeroMQConnector`][proxystore.connectors.zmq.ZeroMQConnector]: anyone who can reach the server's port.
