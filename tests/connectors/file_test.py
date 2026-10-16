@@ -2,8 +2,11 @@ from __future__ import annotations
 
 import os
 import pathlib
+import stat
 import tempfile
 from unittest import mock
+
+import pytest
 
 from proxystore.connectors.file import FileConnector
 
@@ -62,33 +65,106 @@ def test_store_dir_path(tmp_path: pathlib.Path) -> None:
         assert connector.config()['store_dir'] == str(store_dir)
 
 
-def test_get_after_data_removed(tmp_path: pathlib.Path) -> None:
+def test_set_writes_through_temp_file(tmp_path: pathlib.Path) -> None:
     with FileConnector(store_dir=tmp_path) as connector:
-        key = connector.put(b'value')
-        # Simulate a concurrent evict() removing the data file after get()
-        # has checked that the marker exists.
-        os.remove(tmp_path / key.filename)
-        assert connector.get(key) is None
+        key = connector.new_key()
+        with mock.patch('os.replace', wraps=os.replace) as mock_replace:
+            connector.set(key, b'value')
+        src, dst = mock_replace.call_args.args
+        name = os.path.basename(src)
+        assert name.startswith(f'.{key.filename}.')
+        assert name.endswith('.tmp')
+        assert dst == str(tmp_path / key.filename)
+        # Only the object's file is left in the directory.
+        assert os.listdir(tmp_path) == [key.filename]
+        assert connector.get(key) == b'value'
+
+        # Setting the key again replaces the file.
+        connector.set(key, b'new')
+        assert connector.get(key) == b'new'
+        assert os.listdir(tmp_path) == [key.filename]
 
 
-def test_evict_removes_marker_first(tmp_path: pathlib.Path) -> None:
+def test_set_removes_temp_file_on_error(tmp_path: pathlib.Path) -> None:
     with FileConnector(store_dir=tmp_path) as connector:
-        key = connector.put(b'value')
-        with mock.patch('os.remove', wraps=os.remove) as mock_remove:
-            connector.evict(key)
-        removed = [
-            os.path.basename(c.args[0]) for c in mock_remove.call_args_list
-        ]
-        assert removed == [f'{key.filename}.ready', key.filename]
+        key = connector.new_key()
+        with (
+            mock.patch('os.replace', side_effect=OSError('failed')),
+            pytest.raises(OSError, match='failed'),
+        ):
+            connector.set(key, b'value')
+        assert os.listdir(tmp_path) == []
         assert not connector.exists(key)
 
+        # The error is still raised if the temp file is already gone.
+        with (
+            mock.patch('os.replace', side_effect=OSError('failed')),
+            mock.patch('os.remove', side_effect=FileNotFoundError),
+            pytest.raises(OSError, match='failed'),
+        ):
+            connector.set(key, b'value')
 
-def test_evict_partially_removed(tmp_path: pathlib.Path) -> None:
+
+def test_evict_missing(tmp_path: pathlib.Path) -> None:
     with FileConnector(store_dir=tmp_path) as connector:
         key = connector.put(b'value')
-        # Simulate a concurrent evict() removing one of the files between
-        # this evict() checking for and removing it.
-        os.remove(tmp_path / f'{key.filename}.ready')
-        with mock.patch('os.path.exists', return_value=True):
-            connector.evict(key)
-        assert not os.path.exists(tmp_path / key.filename)
+        connector.evict(key)
+        assert not connector.exists(key)
+        assert connector.get(key) is None
+        # Should not fail, e.g., if a concurrent evict() removed it.
+        connector.evict(key)
+
+
+def _mode(path: str | pathlib.Path) -> int:
+    return stat.S_IMODE(os.stat(path).st_mode)
+
+
+def test_default_permissions(tmp_path: pathlib.Path) -> None:
+    store_dir = tmp_path / 'parent' / 'store'
+    with FileConnector(store_dir) as connector:
+        key = connector.put(b'value')
+        assert _mode(store_dir) == 0o700
+        assert _mode(store_dir / key.filename) == 0o600
+        assert connector.config()['dir_mode'] == 0o700
+        assert connector.config()['file_mode'] == 0o600
+
+
+def test_permissions_not_limited_by_umask(tmp_path: pathlib.Path) -> None:
+    store_dir = tmp_path / 'store'
+    old = os.umask(0o077)
+    try:
+        with FileConnector(
+            store_dir,
+            dir_mode=0o770,
+            file_mode=0o660,
+        ) as connector:
+            key = connector.put(b'value')
+            assert _mode(store_dir) == 0o770
+            assert _mode(store_dir / key.filename) == 0o660
+
+            new = FileConnector.from_config(connector.config())
+            assert new.dir_mode == 0o770
+            assert new.file_mode == 0o660
+    finally:
+        os.umask(old)
+
+
+def test_existing_dir_keeps_permissions(tmp_path: pathlib.Path) -> None:
+    store_dir = tmp_path / 'store'
+    store_dir.mkdir()
+    os.chmod(store_dir, 0o755)
+    with FileConnector(store_dir):
+        assert _mode(store_dir) == 0o755
+
+
+def test_dir_created_by_another_process(tmp_path: pathlib.Path) -> None:
+    store_dir = tmp_path / 'store'
+    store_dir.mkdir()
+    os.chmod(store_dir, 0o755)
+    # Simulate another process creating the directory after this one
+    # checked that it does not exist.
+    with (
+        mock.patch('os.path.exists', return_value=False),
+        FileConnector(store_dir),
+    ):
+        assert _mode(store_dir) == 0o755

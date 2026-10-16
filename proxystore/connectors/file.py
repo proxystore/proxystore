@@ -32,9 +32,10 @@ class FileKey(NamedTuple):
 class FileConnector:
     """Connector to shared file system.
 
-    This connector writes objects to unique files within `store_dir`. Marker
-    files are used to indicate that an object is finished being written
-    to avoid race conditions.
+    This connector writes objects to unique files within `store_dir`. Each
+    object is written to a hidden temporary file in `store_dir` which is
+    then renamed, so an object's file only exists once it is completely
+    written.
 
     Args:
         store_dir: Path to directory to store data in. Note this
@@ -43,6 +44,18 @@ class FileConnector:
             [`close()`][proxystore.connectors.file.FileConnector.close] by
             removing `store_dir`.
         buffering: Buffering policy used with [`open()`][open].
+        dir_mode: Permissions of `store_dir` if the connector creates it.
+            The default only gives the current user access. An existing
+            `store_dir` keeps its permissions, and parent directories are
+            created with the default permissions.
+        file_mode: Permissions of the object files. The default only gives
+            the current user access.
+
+    Note:
+        `dir_mode` and `file_mode` are applied exactly and are not limited
+        by the [umask](https://en.wikipedia.org/wiki/Umask){target=_blank},
+        so, e.g., `#!python dir_mode=0o770, file_mode=0o660` shares the
+        objects with the group of `store_dir`.
     """
 
     def __init__(
@@ -51,13 +64,24 @@ class FileConnector:
         *,
         clear: bool = True,
         buffering: int = -1,
+        dir_mode: int = 0o700,
+        file_mode: int = 0o600,
     ) -> None:
         self.store_dir = os.path.abspath(store_dir)
         self.clear = clear
         self.buffering = buffering
+        self.dir_mode = dir_mode
+        self.file_mode = file_mode
 
         if not os.path.exists(self.store_dir):
-            os.makedirs(self.store_dir, exist_ok=True)
+            os.makedirs(os.path.dirname(self.store_dir), exist_ok=True)
+            try:
+                os.mkdir(self.store_dir, mode=self.dir_mode)
+            except FileExistsError:
+                # Another process created the directory first.
+                pass
+            else:
+                os.chmod(self.store_dir, self.dir_mode)
 
     def __enter__(self) -> Self:
         return self
@@ -115,6 +139,8 @@ class FileConnector:
             'store_dir': self.store_dir,
             'clear': self.clear,
             'buffering': self.buffering,
+            'dir_mode': self.dir_mode,
+            'file_mode': self.file_mode,
         }
 
     @classmethod
@@ -132,15 +158,9 @@ class FileConnector:
         Args:
             key: Key associated with object to evict.
         """
-        path = os.path.join(self.store_dir, key.filename)
-        marker = path + '.ready'
-        # Remove the marker first so a concurrent get() does not see the
-        # marker after the data file has been removed. Either file may
-        # already have been removed by a concurrent evict().
+        # The file may already have been removed by a concurrent evict().
         with contextlib.suppress(FileNotFoundError):
-            os.remove(marker)
-        with contextlib.suppress(FileNotFoundError):
-            os.remove(path)
+            os.remove(self._path(key))
 
     def exists(self, key: FileKey) -> bool:
         """Check if an object associated with the key exists.
@@ -151,8 +171,7 @@ class FileConnector:
         Returns:
             If an object associated with the key exists.
         """
-        path = os.path.join(self.store_dir, key.filename + '.ready')
-        return os.path.exists(path)
+        return os.path.exists(self._path(key))
 
     def get(self, key: FileKey) -> BytesLike | None:
         """Get the serialized object associated with the key.
@@ -163,16 +182,11 @@ class FileConnector:
         Returns:
             Serialized object or `None` if the object does not exist.
         """
-        path = os.path.join(self.store_dir, key.filename)
-        marker = path + '.ready'
-        if os.path.exists(marker):
-            try:
-                with open(path, 'rb', buffering=self.buffering) as f:
-                    return f.read()
-            except FileNotFoundError:
-                # The object was evicted after the marker was checked.
-                return None
-        return None
+        try:
+            with open(self._path(key), 'rb', buffering=self.buffering) as f:
+                return f.read()
+        except FileNotFoundError:
+            return None
 
     def get_batch(self, keys: Sequence[FileKey]) -> list[BytesLike | None]:
         """Get a batch of serialized objects associated with the keys.
@@ -239,8 +253,30 @@ class FileConnector:
             key: Key that the object will be associated with.
             obj: Object to associate with the key.
         """
-        path = os.path.join(self.store_dir, key.filename)
-        with open(path, 'wb', buffering=self.buffering) as f:
-            f.write(obj)
-        marker = path + '.ready'
-        open(marker, 'wb').close()
+        # Write to a unique temporary file and rename it so readers never
+        # see a partially written file, and concurrent writers of the same
+        # key do not write to the same file.
+        tmp = os.path.join(
+            self.store_dir,
+            f'.{key.filename}.{uuid.uuid4().hex}.tmp',
+        )
+        try:
+            with open(
+                tmp,
+                'xb',
+                buffering=self.buffering,
+                opener=self._opener,
+            ) as f:
+                os.fchmod(f.fileno(), self.file_mode)
+                f.write(obj)
+            os.replace(tmp, self._path(key))
+        except BaseException:
+            with contextlib.suppress(FileNotFoundError):
+                os.remove(tmp)
+            raise
+
+    def _opener(self, path: str, flags: int) -> int:
+        return os.open(path, flags, self.file_mode)
+
+    def _path(self, key: FileKey) -> str:
+        return os.path.join(self.store_dir, key.filename)
