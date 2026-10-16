@@ -181,7 +181,12 @@ class Store(Generic[ConnectorT]):
             all of them. With `'bytes'`, the cache holds the serialized data
             and deserializes it on every hit, so each caller gets its own
             object at the cost of deserializing each time.
-        metrics: Enable recording operation metrics.
+        metrics: Enable recording operation metrics. Pass a
+            [`StoreMetrics`][proxystore.store.metrics.StoreMetrics] instance
+            to configure it (e.g., `max_keys`). The configuration of
+            `StoreMetrics` is not part of the store's
+            [`config()`][proxystore.store.base.Store.config], so stores
+            created from the config in other processes use the defaults.
         populate_target: Set the default value of `populate_target` for
             proxy methods of the store.
         owner: This store owns the objects stored by the connector, so
@@ -205,7 +210,7 @@ class Store(Generic[ConnectorT]):
         deserializer: DeserializerT | None = None,
         cache_size_bytes: int = DEFAULT_CACHE_SIZE_BYTES,
         cache_mode: CacheModeT = 'objects',
-        metrics: bool = False,
+        metrics: bool | StoreMetrics = False,
         populate_target: bool = True,
         owner: bool = True,
         _id: str | None = None,
@@ -229,7 +234,11 @@ class Store(Generic[ConnectorT]):
         )
         self._id = _id if _id is not None else uuid.uuid4().hex
         self._name = name
-        self._metrics = StoreMetrics() if metrics else None
+        self._metrics: StoreMetrics | None
+        if isinstance(metrics, StoreMetrics):
+            self._metrics = metrics
+        else:
+            self._metrics = StoreMetrics() if metrics else None
         self._cache_size_bytes = cache_size_bytes
         self._cache_mode = cache_mode
         self._serializer = serializer

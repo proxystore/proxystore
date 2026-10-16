@@ -40,6 +40,9 @@ will be `None` when metrics are disabled.
     [`get_metrics()`][proxystore.store.metrics.StoreMetrics.get_metrics]
     returns `None` for older keys, but their times are still included in
     [`aggregate_times()`][proxystore.store.metrics.StoreMetrics.aggregate_times].
+    To change the limit, pass a
+    [`StoreMetrics`][proxystore.store.metrics.StoreMetrics] instance,
+    e.g., `#!python Store(..., metrics=StoreMetrics(max_keys=50_000))`.
 
 Three types of metrics are collected.
 
