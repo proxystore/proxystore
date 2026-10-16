@@ -20,7 +20,9 @@ from typing import TypeVar
 
 import proxystore
 import proxystore.serialize
+from proxystore.connectors.protocols import Connector
 from proxystore.connectors.protocols import DeferrableConnector
+from proxystore.connectors.protocols import KeyT
 from proxystore.proxy import Proxy
 from proxystore.proxy import ProxyLocker
 from proxystore.serialize import BytesLike
@@ -147,7 +149,11 @@ class Store(Generic[ConnectorT]):
         which always creates a new store instance.
 
     Args:
-        connector: Connector instance to use for object storage.
+        connector: Connector instance to use for object storage. Keys
+            taken and returned by the store's methods (`KeyT`) have the
+            key type of the connector (e.g., a
+            [`FileKey`][proxystore.connectors.file.FileKey] for a
+            [`FileConnector`][proxystore.connectors.file.FileConnector]).
         name: Optional name of the store used in logs and error messages.
             The name does not need to be unique.
         serializer: Optional callable which serializes every object put in
@@ -553,7 +559,7 @@ class Store(Generic[ConnectorT]):
         )
         return future
 
-    def evict(self, key: ConnectorKeyT) -> None:
+    def evict(self: Store[Connector[KeyT]], key: KeyT) -> None:
         """Evict the object associated with the key.
 
         Args:
@@ -581,7 +587,7 @@ class Store(Generic[ConnectorT]):
             timer.elapsed_ms,
         )
 
-    def exists(self, key: ConnectorKeyT) -> bool:
+    def exists(self: Store[Connector[KeyT]], key: KeyT) -> bool:
         """Check if an object associated with the key exists.
 
         Args:
@@ -614,8 +620,8 @@ class Store(Generic[ConnectorT]):
         return res
 
     def get(
-        self,
-        key: ConnectorKeyT,
+        self: Store[Connector[KeyT]],
+        key: KeyT,
         *,
         default: object | None = None,
     ) -> Any | None:
@@ -691,8 +697,8 @@ class Store(Generic[ConnectorT]):
         return result
 
     def get_batch(
-        self,
-        keys: Sequence[ConnectorKeyT],
+        self: Store[Connector[KeyT]],
+        keys: Sequence[KeyT],
         *,
         default: object | None = None,
     ) -> list[Any | None]:
@@ -901,7 +907,7 @@ class Store(Generic[ConnectorT]):
             raise error
         return connector_timer.elapsed_ms, deserializer_timer.elapsed_ms
 
-    def is_cached(self, key: ConnectorKeyT) -> bool:
+    def is_cached(self: Store[Connector[KeyT]], key: KeyT) -> bool:
         """Check if an object associated with the key is cached locally.
 
         Args:
@@ -1181,8 +1187,8 @@ class Store(Generic[ConnectorT]):
         return cast(list[Proxy[T] | NonProxiableT], proxies)
 
     def proxy_from_key(
-        self,
-        key: ConnectorKeyT,
+        self: Store[Connector[KeyT]],
+        key: KeyT,
         *,
         evict: bool = False,
         lifetime: Lifetime | None = None,
@@ -1385,12 +1391,12 @@ class Store(Generic[ConnectorT]):
         return possible_proxy
 
     def put(
-        self,
+        self: Store[Connector[KeyT]],
         obj: Any,
         *,
         lifetime: Lifetime | None = None,
         connector_options: Mapping[str, Any] | None = None,
-    ) -> ConnectorKeyT:
+    ) -> KeyT:
         """Put an object in the store.
 
         Args:
@@ -1438,12 +1444,12 @@ class Store(Generic[ConnectorT]):
         return key
 
     def put_batch(
-        self,
+        self: Store[Connector[KeyT]],
         objs: Sequence[Any],
         *,
         lifetime: Lifetime | None = None,
         connector_options: Mapping[str, Any] | None = None,
-    ) -> list[ConnectorKeyT]:
+    ) -> list[KeyT]:
         """Put multiple objects in the store.
 
         Args:
@@ -1504,8 +1510,8 @@ class Store(Generic[ConnectorT]):
         return keys
 
     def _set(
-        self,
-        key: ConnectorKeyT,
+        self: Store[Connector[KeyT]],
+        key: KeyT,
         obj: Any,
         *,
         connector_options: Mapping[str, Any] | None = None,

@@ -179,16 +179,19 @@ class ContextLifetime:
         Warning:
             All keys should have been created by the same
             [`Store`][proxystore.store.base.Store] that this lifetime was
-            initialized with.
+            initialized with. Keys are only checked if `store` is given.
 
         Args:
             keys: One or more keys of objects to associate with this lifetime.
             store: Optional [`Store`][proxystore.store.base.Store] that `keys`
-                belongs to. Ignored by this implementation.
+                belongs to.
 
         Raises:
             RuntimeError: If this lifetime has ended.
+            ValueError: If `store` is not the store of this lifetime.
         """
+        if store is not None:
+            self._check_store_id(store.id)
         with self._lock:
             if self._done:
                 raise RuntimeError(
@@ -218,11 +221,14 @@ class ContextLifetime:
             ProxyStoreFactoryError: If the proxy's factory is not an instance
                 of [`StoreFactory`][proxystore.store.factory.StoreFactory].
             RuntimeError: If this lifetime has ended.
+            ValueError: If a proxy is from a different store than the store
+                of this lifetime.
         """
         keys: list[ConnectorKeyT] = []
         for proxy in proxies:
             factory = get_factory(proxy)
             if isinstance(factory, StoreFactory):
+                self._check_store_id(factory.store_config.id)
                 keys.append(factory.key)
             else:
                 raise ProxyStoreFactoryError(
@@ -231,6 +237,13 @@ class ContextLifetime:
                     'is not supported.',
                 )
         self.add_key(*keys)
+
+    def _check_store_id(self, store_id: str | None) -> None:
+        if store_id != self.store.id:
+            raise ValueError(
+                f'Object is from a different store (id={store_id}) than '
+                f'the store of this lifetime ({self.store!r}).',
+            )
 
     def close(self, *, close_stores: bool = False) -> None:
         """End the lifetime and evict all associated objects.

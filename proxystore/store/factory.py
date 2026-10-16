@@ -88,7 +88,9 @@ class StoreFactory(Generic[ConnectorT, T]):
         *,
         evict: bool = False,
     ) -> None:
-        self.key = key
+        # The key is typed Any because the type of the store's connector,
+        # and so the type of its keys, is not known from a proxy.
+        self.key: Any = key
         self.store_config = store_config
         self.evict = evict
 

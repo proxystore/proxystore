@@ -23,6 +23,7 @@ from proxystore.store.lifetimes import LeaseLifetime
 from proxystore.store.lifetimes import Lifetime
 from proxystore.store.lifetimes import register_lifetime_atexit
 from proxystore.store.lifetimes import StaticLifetime
+from proxystore.store.utils import get_key
 
 
 def test_context_lifetime_protocol(store: Store[LocalConnector]) -> None:
@@ -281,3 +282,24 @@ def test_static_lifetime_close_store(store: Store[LocalConnector]) -> None:
 
     # Cleanup singleton instance
     StaticLifetime._instance = None
+
+
+def test_context_lifetime_rejects_other_stores(
+    store: Store[LocalConnector],
+) -> None:
+    with (
+        Store(LocalConnector()) as other,
+        ContextLifetime(store) as lifetime,
+    ):
+        with pytest.raises(ValueError, match='different store'):
+            lifetime.add_key(other.put('value'), store=other)
+        with pytest.raises(ValueError, match='different store'):
+            other.put('value', lifetime=lifetime)
+        with pytest.raises(ValueError, match='different store'):
+            lifetime.add_proxy(other.proxy('value'))
+        with pytest.raises(ValueError, match='different store'):
+            other.proxy('value', lifetime=lifetime)
+
+        key = store.put('value', lifetime=lifetime)
+        proxy = store.proxy('value', lifetime=lifetime)
+        assert lifetime._keys == {key, get_key(proxy)}
