@@ -33,6 +33,14 @@ will be `None` when metrics are disabled.
     [`Store.metrics`][proxystore.store.base.Store.metrics] will only represent
     a partial view of the overall performance.
 
+!!! note
+    Metrics are kept per key for the 10,000 most recently used keys (or
+    sequences of keys for batch operations), so long-running applications
+    do not use more and more memory.
+    [`get_metrics()`][proxystore.store.metrics.StoreMetrics.get_metrics]
+    returns `None` for older keys, but their times are still included in
+    [`aggregate_times()`][proxystore.store.metrics.StoreMetrics.aggregate_times].
+
 Three types of metrics are collected.
 
 * Attributes: arbitrary attributes associated with an operation.

@@ -68,6 +68,8 @@ _stores: weakref.WeakSet[Store[Any]] = weakref.WeakSet()
 def _reset_stores_after_fork() -> None:
     for store in list(_stores):
         store.cache._reset_after_fork()
+        if store.metrics is not None:
+            store.metrics._reset_after_fork()
 
 
 if hasattr(os, 'register_at_fork'):  # pragma: no branch
