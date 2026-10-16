@@ -1,6 +1,9 @@
 from __future__ import annotations
 
 from typing import Any
+from typing import NamedTuple
+
+import pytest
 
 from proxystore.proxy import Proxy
 from proxystore.store.config import ConnectorConfig
@@ -135,3 +138,80 @@ def test_store_metrics_aggregate_times() -> None:
     assert times['time2'].avg_time_ms == 20
     assert times['time2'].min_time_ms == 10
     assert times['time2'].max_time_ms == 30
+
+
+def test_store_metrics_negative_max_keys() -> None:
+    with pytest.raises(ValueError, match='max_keys'):
+        StoreMetrics(max_keys=-1)
+
+
+def test_store_metrics_drops_least_recent_keys() -> None:
+    metrics = StoreMetrics(max_keys=2)
+    metrics.add_time('time', ('key1',), 1)
+    metrics.add_time('time', ('key2',), 2)
+    # Recording to key1 again makes key2 the least recently recorded.
+    metrics.add_counter('counter', ('key1',), 1)
+    metrics.add_attribute('attribute', ('key3',), 'value')
+
+    assert metrics.get_metrics(('key1',)) is not None
+    assert metrics.get_metrics(('key2',)) is None
+    assert metrics.get_metrics(('key3',)) is not None
+
+    # The times of the dropped key are still aggregated.
+    metrics.add_time('time', ('key4',), 3)
+    assert metrics.get_metrics(('key1',)) is None
+    times = metrics.aggregate_times()
+    assert times['time'].count == 3
+    assert times['time'].avg_time_ms == 2
+
+
+def test_store_metrics_max_keys_zero() -> None:
+    metrics = StoreMetrics(max_keys=0)
+    metrics.add_time('time', ('key',), 1)
+    assert metrics.get_metrics(('key',)) is None
+    assert metrics.aggregate_times()['time'].count == 1
+
+
+class _CollidingKey(NamedTuple):
+    name: str
+
+    def __hash__(self) -> int:
+        return 0
+
+
+def test_store_metrics_keys_with_equal_hashes() -> None:
+    metrics = StoreMetrics()
+    key1, key2 = _CollidingKey('a'), _CollidingKey('b')
+    assert hash(key1) == hash(key2)
+    metrics.add_counter('counter', key1, 1)
+    metrics.add_counter('counter', key2, 2)
+
+    metrics1 = metrics.get_metrics(key1)
+    metrics2 = metrics.get_metrics(key2)
+    assert metrics1 is not None
+    assert metrics1.counters == {'counter': 1}
+    assert metrics2 is not None
+    assert metrics2.counters == {'counter': 2}
+
+
+def test_store_metrics_batch_keys() -> None:
+    metrics = StoreMetrics()
+    keys = [('key1',), ('key2',)]
+    metrics.add_counter('counter', keys, 1)
+    metrics.add_counter('counter', tuple(keys), 1)
+
+    batch = metrics.get_metrics(keys)
+    assert batch is not None
+    assert batch.counters == {'counter': 2}
+    assert metrics.get_metrics(keys[0]) is None
+
+
+def test_store_metrics_after_fork() -> None:
+    metrics = StoreMetrics()
+    # Another thread holds the lock when the process is forked.
+    assert metrics._lock.acquire(timeout=5)
+
+    # Simulate the fork handler running in a forked child process.
+    metrics._reset_after_fork()
+    metrics.add_counter('counter', ('key',), 1)
+    assert metrics.get_metrics(('key',)) is not None

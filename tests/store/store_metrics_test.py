@@ -7,9 +7,11 @@ from typing import Any
 import pytest
 
 from proxystore.connectors.file import FileConnector
+from proxystore.connectors.local import LocalConnector
 from proxystore.serialize import serialize
 from proxystore.store.base import Store
 from proxystore.store.future import ProxyFuture
+from proxystore.store.metrics import StoreMetrics
 
 
 @pytest.fixture
@@ -121,3 +123,15 @@ def test_store_multi_key_operations(store: Store[FileConnector]) -> None:
         assert proxy_metrics.times['store.get'].count == 1
         assert proxy_metrics.times['factory.call'].count == 1
         assert proxy_metrics.times['factory.resolve'].count == 1
+
+
+def test_store_metrics_instance() -> None:
+    metrics = StoreMetrics(max_keys=1)
+    with Store(LocalConnector(), metrics=metrics) as store:
+        assert store.metrics is metrics
+        store.put('a')
+        key = store.put('b')
+        assert metrics.get_metrics(key) is not None
+        assert len(metrics._metrics) == 1
+        # Only whether metrics are enabled is in the config.
+        assert store.config().metrics is True

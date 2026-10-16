@@ -285,3 +285,15 @@ def test_store_after_fork() -> None:
         assert store.get(key) == 'value'
 
         get.result(TIMEOUT)
+
+
+def test_store_metrics_after_fork() -> None:
+    with Store(LocalConnector(), metrics=True) as store:
+        assert store.metrics is not None
+        key = store.put('value')
+        # Another thread is recording metrics when the process is forked.
+        assert store.metrics._lock.acquire(timeout=TIMEOUT)
+
+        # Simulate the fork handler running in a forked child process
+        _reset_stores_after_fork()
+        assert store.get(key) == 'value'
