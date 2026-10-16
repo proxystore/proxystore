@@ -236,7 +236,7 @@ def test_proxy_resolve_none_type(store: Store[LocalConnector]) -> None:
 def test_proxy_recreates_store() -> None:
     with Store(
         LocalConnector(include_data_in_config=True),
-        cache_size=0,
+        cache_size_bytes=0,
         populate_target=False,
     ) as store:
         p: Proxy[list[int]] = store.proxy([1, 2, 3])
@@ -249,11 +249,11 @@ def test_proxy_recreates_store() -> None:
         # Resolve the proxy
         assert p == [1, 2, 3]
 
-        # The store that created the proxy had cache_size=0 so the restored
-        # store should also have cache_size=0.
+        # The store that created the proxy had cache_size_bytes=0 so the
+        # restored store should also have cache_size_bytes=0.
         s = get_store(p)
         assert s is not store
-        assert s.cache.maxsize == 0
+        assert s.cache.max_bytes == 0
         assert not s.is_cached(key)
         s.close()
 

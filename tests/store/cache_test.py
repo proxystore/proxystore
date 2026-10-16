@@ -7,10 +7,15 @@ import pytest
 from proxystore.store.cache import LRUCache
 
 
-def _set(c: LRUCache[str, int], key: str, value: int) -> None:
+def _set(
+    c: LRUCache[str, int],
+    key: str,
+    value: int,
+    size: int = 1,
+) -> None:
     future, started = c.start(key)
     assert started
-    c.finish(key, future, value)
+    c.finish(key, future, value, size=size)
 
 
 def test_lru_raises() -> None:
@@ -61,7 +66,7 @@ def test_lru_cache_start_pending() -> None:
     assert c.get('1') is None
     assert not c.exists('1')
 
-    c.finish('1', future, 1)
+    c.finish('1', future, 1, size=1)
     assert future.result() == 1
     assert c.get('1') == 1
 
@@ -79,18 +84,18 @@ def test_lru_cache_start_same_thread() -> None:
     inner, started = c.start('1')
     assert started
     assert inner is not outer
-    c.finish('1', inner, 2)
+    c.finish('1', inner, 2, size=1)
     assert inner.result() == 2
     assert not c.exists('1')
 
-    c.finish('1', outer, 1)
+    c.finish('1', outer, 1, size=1)
     assert c.get('1') == 1
 
 
 def test_lru_cache_finish_without_caching() -> None:
     c: LRUCache[str, int] = LRUCache(4)
     future, _ = c.start('1')
-    c.finish('1', future, 1, cache=False)
+    c.finish('1', future, 1, size=1, cache=False)
     assert future.result() == 1
     assert not c.exists('1')
     _, started = c.start('1')
@@ -105,7 +110,7 @@ def test_lru_cache_size_zero() -> None:
     assert other is future
     assert not started
 
-    c.finish('1', future, 1)
+    c.finish('1', future, 1, size=1)
     assert other.result() == 1
     assert not c.exists('1')
 
@@ -119,9 +124,45 @@ def test_lru_cache_size_counts_finished_values() -> None:
     assert not c.exists('2')
     assert c.exists('3')
 
-    c.finish('1', pending, 1)
+    c.finish('1', pending, 1, size=1)
     assert c.exists('1')
     assert not c.exists('3')
+
+
+def test_lru_cache_size_bytes() -> None:
+    c: LRUCache[str, int] = LRUCache(10)
+    _set(c, '1', 1, size=4)
+    _set(c, '2', 2, size=4)
+    assert c.size_bytes == 8
+
+    # Both values are removed to make room for a larger one.
+    _set(c, '3', 3, size=9)
+    assert not c.exists('1')
+    assert not c.exists('2')
+    assert c.size_bytes == 9
+
+    c.evict('3')
+    assert c.size_bytes == 0
+    c.evict('3')
+    assert c.size_bytes == 0
+
+
+def test_lru_cache_value_larger_than_max() -> None:
+    c: LRUCache[str, int] = LRUCache(10)
+    _set(c, '1', 1, size=4)
+    future, _ = c.start('2')
+    c.finish('2', future, 2, size=11)
+    assert future.result() == 2
+
+    # The large value is not cached and the cached value is kept.
+    assert not c.exists('2')
+    assert c.exists('1')
+    assert c.size_bytes == 4
+
+    # A value of exactly the max size is cached.
+    _set(c, '3', 3, size=10)
+    assert c.exists('3')
+    assert not c.exists('1')
 
 
 def test_lru_cache_evict_while_pending() -> None:
@@ -136,11 +177,11 @@ def test_lru_cache_evict_while_pending() -> None:
     assert new is not future
 
     # The old value goes to its waiters but is not cached.
-    c.finish('1', future, 1)
+    c.finish('1', future, 1, size=1)
     assert future.result() == 1
     assert c.get('1') is None
 
-    c.finish('1', new, 2)
+    c.finish('1', new, 2, size=1)
     assert c.get('1') == 2
 
 

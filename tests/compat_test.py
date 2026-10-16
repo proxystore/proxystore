@@ -31,7 +31,7 @@ CONFIG = StoreConfig(
     id='store-id',
     name='test',
     connector=ConnectorConfig(kind='local', options={'option': 1}),
-    cache_size=4,
+    cache_size_bytes=4,
 )
 
 
@@ -65,12 +65,13 @@ def test_load_store_config_unknown_and_missing_fields() -> None:
     state = CONFIG.__reduce__()[1][0]
     assert state[STATE_VERSION_KEY] == 1
     state['new_field'] = 'value'
-    del state['cache_size']
+    del state['cache_size_bytes']
 
     with pytest.warns(VersionMismatchWarning, match='new_field'):
         config = _load_store_config(state)
     assert config.id == CONFIG.id
-    assert config.cache_size == StoreConfig.model_fields['cache_size'].default
+    default = StoreConfig.model_fields['cache_size_bytes'].default
+    assert config.cache_size_bytes == default
 
 
 def test_load_connector_config_unknown_fields() -> None:
