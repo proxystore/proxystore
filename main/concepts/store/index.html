@@ -4156,9 +4156,15 @@ multiple proxies refer to the same object.</p>
 <span class="normal"><a href="#__codelineno-2-3">3</a></span>
 <span class="normal"><a href="#__codelineno-2-4">4</a></span></pre></div></td><td class="code"><div><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">proxystore.store</span><span class="w"> </span><span class="kn">import</span> <span class="n">Store</span>
 </span><span id="__span-2-2"><a id="__codelineno-2-2" name="__codelineno-2-2"></a>
-</span><span id="__span-2-3"><a id="__codelineno-2-3" name="__codelineno-2-3"></a><span class="c1"># Cache size of 16 is the default</span>
-</span><span id="__span-2-4"><a id="__codelineno-2-4" name="__codelineno-2-4"></a><span class="n">Store</span><span class="p">(</span><span class="o">...</span><span class="p">,</span> <span class="n">cache_size</span><span class="o">=</span><span class="mi">16</span><span class="p">)</span>
+</span><span id="__span-2-3"><a id="__codelineno-2-3" name="__codelineno-2-3"></a><span class="c1"># 256 MiB is the default</span>
+</span><span id="__span-2-4"><a id="__codelineno-2-4" name="__codelineno-2-4"></a><span class="n">Store</span><span class="p">(</span><span class="o">...</span><span class="p">,</span> <span class="n">cache_size_bytes</span><span class="o">=</span><span class="mi">256</span> <span class="o">*</span> <span class="mi">1024</span> <span class="o">*</span> <span class="mi">1024</span><span class="p">)</span>
 </span></code></pre></div></td></tr></table></div>
+<p>The cache size is in bytes, and each entry counts as the size of the object's serialized data.
+When the cache is full, the least recently used objects are removed, and an object larger than the cache is not cached.
+Set <code class="language-python highlight"><span class="n">cache_size_bytes</span><span class="o">=</span><span class="mi">0</span></code> to turn off the cache.
+The cache is per process, so with many worker processes on a node, the cache can use up to <code>cache_size_bytes</code> in each of them.</p>
+<p>With the default cache mode (described below), the serialized size is an estimate of the memory used by the cached object.
+It is close for objects like bytes and NumPy arrays, but Python objects such as dicts and lists can use several times more memory than their serialized data.</p>
 <p>By default, the cache holds deserialized objects, so a cache hit is free, but every <a class="autorefs autorefs-internal" title="            get" href="../../api/store/base/#proxystore.store.base.Store.get"><code>get()</code></a> and every proxy of the same key in a process share one object.
 Changing that object (e.g., appending to a list) changes it for all of them.
 Set <code class="language-python highlight"><span class="n">cache_mode</span><span class="o">=</span><span class="s1">'bytes'</span></code> to cache the serialized data instead.
