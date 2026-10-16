@@ -4111,6 +4111,18 @@ In multi-process applications or applications that instantiate multiple
   " href="../../api/store/base/#proxystore.store.base.Store.metrics"><code>Store.metrics</code></a> will only represent
 a partial view of the overall performance.</p>
 </div>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>Metrics are kept per key for the 10,000 most recently used keys (or
+sequences of keys for batch operations), so long-running applications
+do not use more and more memory.
+<a class="autorefs autorefs-internal" title="            get_metrics" href="../../api/store/metrics/#proxystore.store.metrics.StoreMetrics.get_metrics"><code>get_metrics()</code></a>
+returns <code>None</code> for older keys, but their times are still included in
+<a class="autorefs autorefs-internal" title="            aggregate_times" href="../../api/store/metrics/#proxystore.store.metrics.StoreMetrics.aggregate_times"><code>aggregate_times()</code></a>.
+To change the limit, pass a
+<a class="autorefs autorefs-internal" title="            StoreMetrics" href="../../api/store/metrics/#proxystore.store.metrics.StoreMetrics"><code>StoreMetrics</code></a> instance,
+e.g., <code class="language-python highlight"><span class="n">Store</span><span class="p">(</span><span class="o">...</span><span class="p">,</span> <span class="n">metrics</span><span class="o">=</span><span class="n">StoreMetrics</span><span class="p">(</span><span class="n">max_keys</span><span class="o">=</span><span class="mi">50_000</span><span class="p">))</span></code>.</p>
+</div>
 <p>Three types of metrics are collected.</p>
 <ul>
 <li>Attributes: arbitrary attributes associated with an operation.</li>
