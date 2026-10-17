@@ -134,6 +134,14 @@ class ObjectSizeExceededError(EndpointRequestError):
     """Exception raised when an object exceeds the max allowable size."""
 
 
+class StorageFullError(EndpointRequestError):
+    """Exception raised when the storage of an endpoint is full.
+
+    See the `max_storage_size` option of
+    [`EndpointStorageConfig`][proxystore.endpoint.config.EndpointStorageConfig].
+    """
+
+
 class PeerError(EndpointRequestError):
     """Base exception for errors forwarding a request to a peer endpoint."""
 

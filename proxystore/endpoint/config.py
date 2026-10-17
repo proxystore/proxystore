@@ -14,6 +14,7 @@ from pydantic import ConfigDict
 from pydantic import Field
 from pydantic import field_validator
 from pydantic import model_validator
+from pydantic import ValidationInfo
 
 from proxystore.endpoint.files import VersionedFile
 from proxystore.endpoint.identity import EndpointId
@@ -45,23 +46,69 @@ class EndpointStorageConfig(BaseModel):
             absolute path can be used to store the database elsewhere
             (e.g., on a larger file system). `~` is expanded to the user's
             home directory.
+        max_storage_size: Maximum total size in bytes of the objects stored
+            in memory. Only valid with the `"memory"` backend. A request to
+            store an object which does not fit fails with a
+            [`StorageFullError`][proxystore.endpoint.exceptions.StorageFullError],
+            and stored objects are never removed to make room. If `0`, there
+            is no limit. A string with units is also accepted (e.g.,
+            `"8 GiB"`, see
+            [`readable_to_bytes()`][proxystore.utils.data.readable_to_bytes]).
+        object_ttl: Seconds after an object is stored that it expires and is
+            removed, for both backends. Storing an object again with the same
+            key restarts its time. When the endpoint starts with a SQLite
+            database, objects without an expiry time (e.g., stored while
+            `object_ttl` was `0`) expire `object_ttl` seconds later. If `0`,
+            objects do not expire.
 
     Raises:
-        ValueError: If `database_path` is set with the `"memory"` backend.
+        ValueError: If `database_path` is set with the `"memory"` backend,
+            if `max_storage_size` is set with the `"sqlite"` backend, or if
+            `max_storage_size` or `object_ttl` is negative.
     """
 
     model_config = ConfigDict(extra='forbid')
 
     backend: Literal['memory', 'sqlite'] = 'memory'
     database_path: str | None = None
+    max_storage_size: int = 0
+    object_ttl: float = 0
+
+    @field_validator('max_storage_size', mode='before')
+    @classmethod
+    def _max_storage_size_parser(cls, v: Any) -> Any:
+        return readable_to_bytes(v) if isinstance(v, str) else v
+
+    @field_validator('max_storage_size', 'object_ttl')
+    @classmethod
+    def _non_negative_validator(cls, v: float, info: ValidationInfo) -> float:
+        if v < 0:
+            raise ValueError(
+                f'The {info.field_name} must be zero (no limit) or greater.',
+            )
+        return v
 
     @model_validator(mode='after')
-    def _database_path_validator(self) -> Self:
+    def _backend_options_validator(self) -> Self:
         if self.backend != 'sqlite' and self.database_path is not None:
             raise ValueError(
                 'The database_path is only used by the "sqlite" backend.',
             )
+        if self.backend != 'memory' and self.max_storage_size > 0:
+            raise ValueError(
+                'The max_storage_size is only used by the "memory" backend.',
+            )
         return self
+
+    @property
+    def storage_size_limit(self) -> int | None:
+        """Maximum storage size in bytes or `None` if there is no limit."""
+        return self.max_storage_size if self.max_storage_size > 0 else None
+
+    @property
+    def ttl(self) -> float | None:
+        """Seconds until objects expire or `None` if they do not expire."""
+        return self.object_ttl if self.object_ttl > 0 else None
 
 
 class EndpointP2PConfig(BaseModel):
@@ -160,7 +207,9 @@ class EndpointConfig(VersionedFile):
             underscore characters, if the ID cannot be parsed, if the
             port is not in the range [1, 65535], if the host is empty, if
             the version is not supported, if the maximum object size is
-            negative, or if there are unknown fields.
+            negative, if the maximum storage size is smaller than the
+            maximum object size (or the object size has no limit), or if
+            there are unknown fields.
     """
 
     DESCRIPTION: ClassVar[str] = 'configuration'
@@ -225,6 +274,20 @@ class EndpointConfig(VersionedFile):
                 'Max object size must be zero (no limit) or greater.',
             )
         return v
+
+    @model_validator(mode='after')
+    def _storage_size_validator(self) -> Self:
+        storage_limit = self.storage.storage_size_limit
+        object_limit = self.object_size_limit
+        if storage_limit is not None and (
+            object_limit is None or storage_limit < object_limit
+        ):
+            raise ValueError(
+                'The max_storage_size must be at least the max_object_size '
+                '(and max_object_size must be set) so any object the '
+                'endpoint accepts can be stored.',
+            )
+        return self
 
     @property
     def object_size_limit(self) -> int | None:

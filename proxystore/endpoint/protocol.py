@@ -68,6 +68,7 @@ from proxystore.endpoint.exceptions import ObjectSizeExceededError
 from proxystore.endpoint.exceptions import PeeringDisabledError
 from proxystore.endpoint.exceptions import PeerNotAllowedError
 from proxystore.endpoint.exceptions import PeerUnavailableError
+from proxystore.endpoint.exceptions import StorageFullError
 from proxystore.endpoint.identity import EndpointId
 from proxystore.serialize import BytesLike
 
@@ -201,6 +202,8 @@ class Status(enum.IntEnum):
     """Request targets a peer which is not allowed to communicate."""
     PEER_UNAVAILABLE = 8
     """Request targets a peer which cannot be reached."""
+    STORAGE_FULL = 9
+    """Request data does not fit in the storage of the endpoint."""
 
 
 STATUS_ERRORS: dict[Status, type[EndpointError]] = {
@@ -211,6 +214,7 @@ STATUS_ERRORS: dict[Status, type[EndpointError]] = {
     Status.PEERING_DISABLED: PeeringDisabledError,
     Status.PEER_NOT_ALLOWED: PeerNotAllowedError,
     Status.PEER_UNAVAILABLE: PeerUnavailableError,
+    Status.STORAGE_FULL: StorageFullError,
 }
 """Exception type corresponding to each error status."""
 
