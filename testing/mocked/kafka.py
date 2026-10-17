@@ -25,6 +25,9 @@ class MockKafkaProducer(confluent_kafka.Producer):
     def flush(self, timeout: float | None = None) -> None:
         pass
 
+    def poll(self, timeout: float | None = None) -> int:
+        return 0
+
     def produce(self, topic: str, data: bytes) -> None:
         message = MockMessage(topic, data, None)
         self._queues[topic].put(message)

@@ -11,9 +11,16 @@ from typing import Self
 
 import confluent_kafka
 
+# Seconds to wait for messages to be delivered when the local queue is full.
+_FULL_QUEUE_POLL_TIMEOUT = 1
+
 
 class KafkaPublisher:
     """Kafka publisher shim.
+
+    Messages are delivered in the background, and
+    [`close()`][proxystore.stream.shims.kafka.KafkaPublisher.close] waits
+    for every message to be delivered.
 
     Args:
         client: Kafka producer client.
@@ -33,8 +40,20 @@ class KafkaPublisher:
             topic: Stream topic to publish message to.
             message: Message as bytes to publish to the stream.
         """
-        self.client.produce(topic, message)
-        self.client.flush()
+        # Messages are sent in the background and flushed in close().
+        # Flushing after each message would wait for every message to be
+        # delivered before the next is sent.
+        while True:
+            try:
+                self.client.produce(topic, message)
+            except BufferError:
+                # The local queue is full, so wait for some messages to be
+                # delivered and try again.
+                self.client.poll(_FULL_QUEUE_POLL_TIMEOUT)
+            else:
+                break
+        # Serve delivery callbacks of earlier messages without blocking.
+        self.client.poll(0)
 
 
 class KafkaSubscriber:
