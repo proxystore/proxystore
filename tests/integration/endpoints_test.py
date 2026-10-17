@@ -78,4 +78,11 @@ async def test_endpoint_transfer(tmp_path: pathlib.Path) -> None:
                 assert store2.get(key) == 'value'
                 assert store2.exists(key)
 
+                # A batch with objects on both endpoints fetches the objects
+                # on the peer at the same time.
+                remote = store2.put_batch(['a', 'b', 'c'])
+                local = store1.put('d')
+                keys = [remote[0], local, remote[1], remote[2]]
+                assert store1.get_batch(keys) == ['a', 'd', 'b', 'c']
+
         await asyncio.to_thread(_transfer)

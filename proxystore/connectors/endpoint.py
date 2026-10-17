@@ -11,6 +11,7 @@ import uuid
 import weakref
 from collections.abc import Callable
 from collections.abc import Sequence
+from concurrent.futures import ThreadPoolExecutor
 from types import TracebackType
 from typing import Any
 from typing import NamedTuple
@@ -36,6 +37,10 @@ from proxystore.utils.environment import home_dir
 logger = logging.getLogger(__name__)
 
 _T = TypeVar('_T')
+
+# Maximum number of requests for objects on peer endpoints which a
+# connector runs at the same time, each with its own connection.
+_PEER_CONCURRENCY = 8
 
 
 class EndpointConnectorError(Exception):
@@ -287,11 +292,40 @@ class EndpointConnector:
         Args:
             keys: Sequence of keys associated with objects to retrieve.
 
+        Note:
+            Objects on peer endpoints are fetched at the same time (up to
+            eight at a time, each with its own connection to the local
+            endpoint) because each request waits for the peer to respond.
+            Objects on the local endpoint are fetched one at a time while
+            the peer requests run, because the local endpoint is not faster
+            when sent requests at the same time.
+
         Returns:
             List with same order as `keys` with the serialized objects or \
             `None` if the corresponding key does not have an associated object.
         """
-        return [self.get(key) for key in keys]
+        peer = [
+            i
+            for i, key in enumerate(keys)
+            if key.endpoint_id != self.endpoint_id
+        ]
+        if len(peer) == 0:
+            return [self.get(key) for key in keys]
+
+        executor = self._pool.executor()
+        futures = {i: executor.submit(self.get, keys[i]) for i in peer}
+        try:
+            objs = [
+                None if i in futures else self.get(key)
+                for i, key in enumerate(keys)
+            ]
+            for i, future in futures.items():
+                objs[i] = future.result()
+        finally:
+            # Requests which have not started are not needed if one failed.
+            for future in futures.values():
+                future.cancel()
+        return objs
 
     def new_key(self, obj: BytesLike | None = None) -> EndpointKey:
         """Create a new key.
@@ -443,6 +477,9 @@ class _ConnectionPool:
         self._reconnect_timeout = reconnect_timeout
         self._idle: collections.deque[EndpointClient] = collections.deque()
         self._lock = threading.Lock()
+        # Runs requests for objects on peer endpoints in batches. Made when
+        # first needed.
+        self._executor: ThreadPoolExecutor | None = None
         _POOLS.add(self)
 
     def run(self, request: Callable[[EndpointClient], _T]) -> _T:
@@ -477,11 +514,28 @@ class _ConnectionPool:
         finally:
             self._release(client)
 
-    def close(self) -> None:
-        """Close all idle connections in the pool."""
+    def executor(self) -> ThreadPoolExecutor:
+        """Get the threads used to run requests of a batch at the same time.
+
+        Each thread should make one request at a time with `run()`.
+        """
         with self._lock:
+            if self._executor is None:
+                self._executor = ThreadPoolExecutor(
+                    max_workers=_PEER_CONCURRENCY,
+                    thread_name_prefix='proxystore-endpoint-batch',
+                )
+            return self._executor
+
+    def close(self) -> None:
+        """Close all idle connections in the pool and stop its threads."""
+        with self._lock:
+            executor = self._executor
+            self._executor = None
             while self._idle:
                 self._idle.pop().close()
+        if executor is not None:
+            executor.shutdown(wait=True)
 
     def add(self, client: EndpointClient) -> None:
         """Add an idle connection to the pool."""
@@ -518,6 +572,8 @@ class _ConnectionPool:
         # cannot be used by the child, and the lock may have been held by
         # another thread of the parent when the process was forked.
         self._lock = threading.Lock()
+        # The threads of the executor do not exist in the child.
+        self._executor = None
         while self._idle:
             self._idle.pop().close()
 

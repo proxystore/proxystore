@@ -27,6 +27,7 @@ from proxystore.endpoint.exceptions import EndpointNotRunningError
 from proxystore.endpoint.exceptions import EndpointProtocolError
 from proxystore.endpoint.exceptions import EndpointTimeoutError
 from proxystore.endpoint.identity import EndpointId
+from proxystore.serialize import BytesLike
 from testing.compat import randbytes
 from testing.endpoint import copy_endpoint_dir
 from testing.endpoint import write_endpoint
@@ -409,3 +410,76 @@ async def test_connector_tls(tmp_path: pathlib.Path) -> None:
 
     async with Endpoint(endpoint_dir):
         await asyncio.to_thread(_run)
+
+
+def test_get_batch_local_keys_one_at_a_time(endpoint_connector) -> None:
+    with EndpointConnector.from_config(endpoint_connector.config()) as conn:
+        keys = conn.put_batch([b'a', b'b'])
+        missing = conn.new_key()
+        assert conn.get_batch([*keys, missing]) == [b'a', b'b', None]
+        # Batches of local keys never start the threads for peer requests.
+        assert conn._pool._executor is None
+
+
+def test_get_batch_peer_keys_at_same_time(endpoint_connector) -> None:
+    with EndpointConnector.from_config(endpoint_connector.config()) as conn:
+        local = conn.put(b'local')
+        peer = EndpointId.random()
+        peer_keys = [EndpointKey(f'peer-{i}', peer) for i in range(2)]
+        get = conn.get
+        # Each peer request waits for the other, so this only finishes if
+        # they run at the same time.
+        barrier = threading.Barrier(2, timeout=5)
+        threads: set[str] = set()
+
+        def _get(key: EndpointKey) -> BytesLike | None:
+            if key.endpoint_id != peer:
+                return get(key)
+            barrier.wait()
+            threads.add(threading.current_thread().name)
+            return key.object_id.encode()
+
+        with mock.patch.object(conn, 'get', side_effect=_get):
+            objs = conn.get_batch([peer_keys[0], local, peer_keys[1]])
+
+        assert objs == [b'peer-0', b'local', b'peer-1']
+        assert len(threads) == 2
+        assert all(
+            name.startswith('proxystore-endpoint-batch') for name in threads
+        )
+
+
+def test_get_batch_peer_error(endpoint_connector) -> None:
+    with EndpointConnector.from_config(endpoint_connector.config()) as conn:
+        peer = EndpointId.random()
+        keys = [EndpointKey(f'peer-{i}', peer) for i in range(3)]
+
+        def _get(key: EndpointKey) -> bytes:
+            if key.object_id == 'peer-1':
+                raise EndpointConnectorError('failed')
+            return b'value'
+
+        with (
+            mock.patch.object(conn, 'get', side_effect=_get),
+            pytest.raises(EndpointConnectorError, match='failed'),
+        ):
+            conn.get_batch(keys)
+
+
+def test_close_stops_batch_threads(endpoint_connector) -> None:
+    conn = EndpointConnector.from_config(endpoint_connector.config())
+    executor = conn._pool.executor()
+    assert conn._pool.executor() is executor
+    conn.close()
+    assert conn._pool._executor is None
+    with pytest.raises(RuntimeError, match='shutdown'):
+        executor.submit(print)
+
+
+def test_batch_threads_reset_after_fork(endpoint_connector) -> None:
+    with EndpointConnector.from_config(endpoint_connector.config()) as conn:
+        executor = conn._pool.executor()
+        conn._pool._reset_after_fork()
+        assert conn._pool._executor is None
+        # This process was not actually forked so stop the old threads.
+        executor.shutdown()
