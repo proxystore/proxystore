@@ -141,7 +141,12 @@ database_path = "blobs.db"  # (13)!
     by passing the `--persist` flag when configuring the endpoint or by
     setting `backend = "sqlite"` in the `[storage]` section of the config.
     Blobs stored by the endpoint will then be written to a SQLite database
-    file. Note this will result in slower performance.
+    file. Note this will result in slower performance. The database is not
+    synced to disk after every write, so a crash of the operating system or
+    a power loss (but not a crash of the endpoint) can lose the most recently
+    stored blobs. The endpoint locks the database while it is running, so
+    other processes (e.g., the `sqlite3` shell) cannot open it until the
+    endpoint stops.
 
 An up-to-date configuration description can be found in the
 [`EndpointConfig`][proxystore.endpoint.config.EndpointConfig] docstring.

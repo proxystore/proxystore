@@ -122,6 +122,13 @@ class MemoryStorage:
 class SQLiteStorage:
     """Storage of blobs in a SQLite database.
 
+    The database uses write-ahead logging with `synchronous=NORMAL`, so
+    commits are not synced to disk one at a time. The database is never
+    corrupted, and a crash of the endpoint loses no blobs, but a crash of
+    the operating system or a power loss can lose the most recently stored
+    blobs. The database is locked while the storage is open, so other
+    processes cannot open it.
+
     Args:
         database_path: Path to database file. `~` is expanded to the user's
             home directory. Use `":memory:"` for a database which is only
@@ -151,6 +158,19 @@ class SQLiteStorage:
         async with self._db_lock:
             if self._db is None:
                 db = await aiosqlite.connect(self.database_path)
+                # Each set() and evict() is its own transaction, and syncing
+                # each one to disk made writes about 16x slower. The journal
+                # mode is kept in the database file, so existing databases
+                # switch to WAL when opened. A database in memory has no
+                # journal file, so it keeps its "memory" journal mode.
+                #
+                # Only this connection uses the database, so it is locked
+                # exclusively. This must be set before WAL so SQLite keeps
+                # the WAL index in memory instead of a shared memory file,
+                # which does not work on network file systems.
+                await db.execute('PRAGMA locking_mode=EXCLUSIVE')
+                await db.execute('PRAGMA journal_mode=WAL')
+                await db.execute('PRAGMA synchronous=NORMAL')
                 await db.execute(
                     'CREATE TABLE IF NOT EXISTS blobs'
                     '(key TEXT PRIMARY KEY, value BLOB NOT NULL)',

@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import asyncio
 import pathlib
+import sqlite3
 from collections.abc import AsyncGenerator
 from unittest import mock
 
@@ -87,4 +88,47 @@ async def test_sqlite_storage_close() -> None:
     await storage.set('key', b'value')
     await storage.close()
     # Closing twice is a no-op
+    await storage.close()
+
+
+async def test_sqlite_storage_uses_wal(tmp_path: pathlib.Path) -> None:
+    storage = SQLiteStorage(tmp_path / 'blobs.db')
+    db = await storage.db()
+    async with db.execute('PRAGMA journal_mode') as cursor:
+        assert await cursor.fetchone() == ('wal',)
+    # 1 is NORMAL.
+    async with db.execute('PRAGMA synchronous') as cursor:
+        assert await cursor.fetchone() == (1,)
+    async with db.execute('PRAGMA locking_mode') as cursor:
+        assert await cursor.fetchone() == ('exclusive',)
+    await storage.set('key', b'value')
+    # The WAL index is kept in memory rather than a shared memory file,
+    # which does not work on network file systems.
+    assert not (tmp_path / 'blobs.db-shm').exists()
+
+    # Other connections cannot open the database while it is in use.
+    with pytest.raises(sqlite3.OperationalError, match='locked'):
+        sqlite3.connect(tmp_path / 'blobs.db', timeout=0).execute(
+            'SELECT count(*) FROM blobs',
+        )
+    await storage.close()
+
+
+async def test_sqlite_storage_existing_database_uses_wal(
+    tmp_path: pathlib.Path,
+) -> None:
+    # A database made by an older version uses the default journal mode.
+    path = tmp_path / 'blobs.db'
+    async with aiosqlite.connect(path) as db:
+        await db.execute(
+            'CREATE TABLE blobs (key TEXT PRIMARY KEY, value BLOB NOT NULL)',
+        )
+        await db.execute("INSERT INTO blobs VALUES ('key', x'00')")
+        await db.commit()
+
+    storage = SQLiteStorage(path)
+    assert await storage.get('key') == b'\x00'
+    db = await storage.db()
+    async with db.execute('PRAGMA journal_mode') as cursor:
+        assert await cursor.fetchone() == ('wal',)
     await storage.close()
