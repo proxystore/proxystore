@@ -4295,6 +4295,8 @@ The <a class="autorefs autorefs-internal" title="            StaticLifetime" hre
 <li>There can only be one <a class="autorefs autorefs-internal" title="            OwnedProxy" href="../../api/store/ref/#proxystore.store.ref.OwnedProxy"><code>OwnedProxy[T]</code></a> for any <em>target</em> in the global store.</li>
 <li>When an <a class="autorefs autorefs-internal" title="            OwnedProxy" href="../../api/store/ref/#proxystore.store.ref.OwnedProxy"><code>OwnedProxy[T]</code></a> goes out of scope (e.g., gets garbage collected), the associated <em>target</em> is removed from the global store.</li>
 </ol>
+<p>The <em>target</em> is removed by a background thread shortly after the <a class="autorefs autorefs-internal" title="            OwnedProxy" href="../../api/store/ref/#proxystore.store.ref.OwnedProxy"><code>OwnedProxy[T]</code></a> is deleted, rather than by the thread which deleted it, because evicting from inside the garbage collector can deadlock.
+<a class="autorefs autorefs-internal" title="            close" href="../../api/store/base/#proxystore.store.base.Store.close"><code>Store.close()</code></a> and the exit of the program wait for these evictions to finish.</p>
 <p>An <a class="autorefs autorefs-internal" title="            OwnedProxy" href="../../api/store/ref/#proxystore.store.ref.OwnedProxy"><code>OwnedProxy[T]</code></a> can be borrowed without relinquishing ownership.
 This requires two additional rules.</p>
 <ol>
