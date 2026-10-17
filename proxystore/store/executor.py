@@ -52,9 +52,11 @@ an array is larger than some threshold.
 
 from __future__ import annotations
 
+import collections
+import logging
+import threading
 import warnings
 from collections.abc import Callable
-from collections.abc import Generator
 from collections.abc import Iterable
 from collections.abc import Iterator
 from collections.abc import Mapping
@@ -70,13 +72,20 @@ from typing import TypeVar
 
 from proxystore.proxy import Proxy
 from proxystore.store import get_or_create_store
+from proxystore.store._evictions import evictions
 from proxystore.store.base import Store
 from proxystore.store.config import StoreConfig
+from proxystore.store.factory import StoreFactory
 from proxystore.store.types import ConnectorKeyT
 from proxystore.store.utils import get_key
 
+logger = logging.getLogger(__name__)
+
 P = ParamSpec('P')
 R = TypeVar('R')
+
+# Maximum number of function wrappers kept by a StoreExecutor.
+_MAX_WRAPPERS = 128
 
 
 class _FunctionWrapper(Generic[P, R]):
@@ -113,9 +122,10 @@ def _proxy_iterable(
     items: Iterable[Any],
     store: Store[Any],
     should_proxy: Callable[[Any], bool],
-) -> tuple[tuple[Any, ...], list[ConnectorKeyT]]:
-    keys: list[ConnectorKeyT] = []
-
+    keys: list[ConnectorKeyT],
+) -> tuple[Any, ...]:
+    # Keys of new proxies are appended to keys as they are made so the
+    # caller can evict them if proxying a later item fails.
     def _apply(item: Any) -> Any:
         if type(item) is not Proxy and should_proxy(item):
             proxy = store.proxy(item)
@@ -123,18 +133,16 @@ def _proxy_iterable(
             return proxy
         return item
 
-    output = tuple(map(_apply, items))
-    return output, keys
+    return tuple(map(_apply, items))
 
 
 def _proxy_mapping(
     mapping: Mapping[Any, Any],
     store: Store[Any],
     should_proxy: Callable[[Any], bool],
-) -> tuple[dict[Any, Any], list[ConnectorKeyT]]:
+    keys: list[ConnectorKeyT],
+) -> dict[Any, Any]:
     output = {}
-    keys: list[ConnectorKeyT] = []
-
     for key, value in mapping.items():
         if type(value) is not Proxy and should_proxy(value):
             proxy = store.proxy(value)
@@ -142,8 +150,17 @@ def _proxy_mapping(
             output[key] = proxy
         else:
             output[key] = value
+    return output
 
-    return output, keys
+
+def _evict(store: Store[Any], keys: list[ConnectorKeyT]) -> None:
+    # Errors are logged so every key is tried and an error that caused the
+    # eviction is not hidden.
+    for key in keys:
+        try:
+            store.evict(key)
+        except Exception:
+            logger.exception('Failed to evict input %s', key)
 
 
 @runtime_checkable
@@ -232,10 +249,74 @@ def _evict_callback(
     keys: list[ConnectorKeyT],
 ) -> Callable[[Future[Any]], None]:
     def _callback(_: Future[Any]) -> None:
-        for key in keys:
-            store.evict(key)
+        _evict(store, keys)
 
     return _callback
+
+
+class _MapResults(Iterator[R]):
+    """Results of `StoreExecutor.map()`.
+
+    The input proxies are evicted once the results stop: when every result
+    was received, when getting a result raises, or when this iterator is
+    closed or garbage collected before then. Evicting waits for every
+    result because there is no guarantee what order tasks complete in.
+    Tasks still running when the results stop early may fail to resolve
+    their inputs, but their results are not used.
+    """
+
+    def __init__(
+        self,
+        results: Iterator[Any],
+        store: Store[Any],
+        keys: list[ConnectorKeyT],
+        timeout: float | None,
+    ) -> None:
+        self._results = results
+        self._store = store
+        self._keys = keys
+        self._timeout = timeout
+        self._done = False
+        # Started here because __del__ cannot start a thread.
+        evictions.start()
+
+    def __next__(self) -> R:
+        if self._done:
+            raise StopIteration
+        try:
+            result = next(self._results)
+            if isinstance(result, _FutureProtocol):
+                # Some Executor-like classes return futures from map() so we
+                # internally handle that here.
+                result = result.result(timeout=self._timeout)
+        except BaseException:
+            # Includes StopIteration once every result was received.
+            self._finish()
+            raise
+        return cast(R, result)
+
+    def close(self) -> None:
+        """Stop getting results and evict the input proxies."""
+        if not self._done:
+            close = getattr(self._results, 'close', None)
+            if close is not None:
+                close()
+            self._finish()
+
+    def _finish(self) -> None:
+        self._done = True
+        keys, self._keys = self._keys, []
+        _evict(self._store, keys)
+
+    def __del__(self) -> None:
+        if not self._done:
+            self._done = True
+            # Evicting here can deadlock if the garbage collector called
+            # this while this thread holds a lock needed to evict, so the
+            # evictions are done by another thread.
+            config = self._store.config()
+            for key in self._keys:
+                evictions.put(StoreFactory(key, config))
 
 
 class StoreExecutor(Executor):
@@ -308,21 +389,33 @@ class StoreExecutor(Executor):
         self.ownership = ownership
         self.close_store = close_store
 
-        self._registered: dict[
+        # Wrappers of the most recently used functions, so a function is
+        # wrapped once rather than for every task. The number of wrappers is
+        # limited because code which makes a new function for each task
+        # (e.g., a lambda or functools.partial) would otherwise keep every
+        # function and the objects it references.
+        self._registered: collections.OrderedDict[
             Callable[..., Any],
             _FunctionWrapper[Any, Any],
-        ] = {}
+        ] = collections.OrderedDict()
+        self._registered_lock = threading.Lock()
 
     def _wrapped(self, function: Callable[P, R]) -> _FunctionWrapper[P, R]:
-        if function not in self._registered:
-            self._registered[function] = _FunctionWrapper(
-                function,
-                store_config=self.store.config(),
-                should_proxy=self.should_proxy,
-                return_owned_proxy=self.ownership,
-            )
-
-        return cast(_FunctionWrapper[P, R], self._registered[function])
+        with self._registered_lock:
+            wrapper = self._registered.get(function)
+            if wrapper is None:
+                wrapper = _FunctionWrapper(
+                    function,
+                    store_config=self.store.config(),
+                    should_proxy=self.should_proxy,
+                    return_owned_proxy=self.ownership,
+                )
+                self._registered[function] = wrapper
+                if len(self._registered) > _MAX_WRAPPERS:
+                    self._registered.popitem(last=False)
+            else:
+                self._registered.move_to_end(function)
+        return cast(_FunctionWrapper[P, R], wrapper)
 
     def submit(
         self,
@@ -342,13 +435,23 @@ class StoreExecutor(Executor):
             [`Future`][concurrent.futures.Future] representing \
             the result of the execution of the callable.
         """
-        pargs, keys1 = _proxy_iterable(args, self.store, self.should_proxy)
-        pkwargs, keys2 = _proxy_mapping(kwargs, self.store, self.should_proxy)
+        keys: list[ConnectorKeyT] = []
+        try:
+            pargs = _proxy_iterable(args, self.store, self.should_proxy, keys)
+            pkwargs = _proxy_mapping(
+                kwargs,
+                self.store,
+                self.should_proxy,
+                keys,
+            )
+            wrapped = self._wrapped(function)
+            future = self.executor.submit(wrapped, *pargs, **pkwargs)
+        except BaseException:
+            # No task will use the inputs which were already proxied.
+            _evict(self.store, keys)
+            raise
 
-        wrapped = self._wrapped(function)
-        future = self.executor.submit(wrapped, *pargs, **pkwargs)
-
-        future.add_done_callback(_evict_callback(self.store, keys1 + keys2))
+        future.add_done_callback(_evict_callback(self.store, keys))
         return future
 
     def map(  # type: ignore[override]
@@ -365,6 +468,12 @@ class StoreExecutor(Executor):
             iterables: Variable number of iterables.
             kwargs: Keyword arguments to pass to `self.executor.map()`.
 
+        Note:
+            Proxied inputs are evicted once every result is received, getting
+            a result raises, or the returned iterator is closed or deleted.
+            Tasks still running when the results stop early may fail to
+            resolve their inputs.
+
         Returns:
             An iterator equivalent to: `map(func, *iterables)` but the calls \
             may be evaluated out-of-order.
@@ -373,37 +482,25 @@ class StoreExecutor(Executor):
         # The proxied arguments are collected into tuples (rather than lazily
         # proxied) because some executors, such as the Dask Distributed
         # Client, do not support mapping over iterators.
-        pargs: list[tuple[Any, ...]] = []
         keys: list[ConnectorKeyT] = []
-        for iterable in iterables:
-            args, iterable_keys = _proxy_iterable(
-                iterable,
-                self.store,
-                self.should_proxy,
-            )
-            pargs.append(args)
-            keys.extend(iterable_keys)
+        try:
+            pargs = [
+                _proxy_iterable(iterable, self.store, self.should_proxy, keys)
+                for iterable in iterables
+            ]
+            wrapped = self._wrapped(function)
+            results = self.executor.map(wrapped, *pargs, **kwargs)
+        except BaseException:
+            # No task will use the inputs which were already proxied.
+            _evict(self.store, keys)
+            raise
 
-        wrapped = self._wrapped(function)
-        results = self.executor.map(wrapped, *pargs, **kwargs)
-
-        def _result_iterator() -> Generator[R, None, None]:
-            for result in results:
-                if isinstance(result, _FutureProtocol):
-                    # Some Executor-like classes return futures from map()
-                    # so we internally handle that here.
-                    timeout = kwargs.get('timeout')
-                    yield result.result(timeout=timeout)
-                else:
-                    yield result
-
-            # Wait to evict input proxies until all results have been received.
-            # Waiting is needed because there is no guarantee what order tasks
-            # complete in.
-            for key in keys:
-                self.store.evict(key)
-
-        return _result_iterator()
+        return _MapResults(
+            iter(results),
+            self.store,
+            keys,
+            kwargs.get('timeout'),
+        )
 
     def shutdown(
         self,
