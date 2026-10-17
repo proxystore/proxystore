@@ -4383,7 +4383,12 @@ is stored separately in the <code>secret.key</code> file which only the owner ca
 by passing the <code>--persist</code> flag when configuring the endpoint or by
 setting <code>backend = "sqlite"</code> in the <code>[storage]</code> section of the config.
 Blobs stored by the endpoint will then be written to a SQLite database
-file. Note this will result in slower performance.</p>
+file. Note this will result in slower performance. The database is not
+synced to disk after every write, so a crash of the operating system or
+a power loss (but not a crash of the endpoint) can lose the most recently
+stored blobs. The endpoint locks the database while it is running, so
+other processes (e.g., the <code>sqlite3</code> shell) cannot open it until the
+endpoint stops.</p>
 </div>
 <p>An up-to-date configuration description can be found in the
 <a class="autorefs autorefs-internal" title="            EndpointConfig" href="../../api/endpoint/config/#proxystore.endpoint.config.EndpointConfig"><code>EndpointConfig</code></a> docstring.</p>
