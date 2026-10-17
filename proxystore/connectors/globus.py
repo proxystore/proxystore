@@ -37,7 +37,10 @@ from proxystore.serialize import BytesLike
 from proxystore.utils.environment import hostname
 
 logger = logging.getLogger(__name__)
+
 GLOBUS_MKDIR_EXISTS_ERROR_CODE = 'ExternalError.MkdirFailed.Exists'
+# Statuses of Globus tasks which will not change again.
+_FINISHED_TASK_STATUSES = frozenset({'SUCCEEDED', 'FAILED'})
 
 
 class GlobusEndpoint:
@@ -371,6 +374,9 @@ class GlobusConnector:
         # The GlobusApp used by the transfer client to get and refresh tokens
         # is not thread-safe, so only one thread uses the client at a time.
         self._transfer_client_lock = threading.Lock()
+        # IDs of tasks known to be finished, which are not checked again
+        # with the Transfer API because a finished task never changes.
+        self._finished_tasks: set[str] = set()
 
     def __enter__(self) -> Self:
         return self
@@ -411,34 +417,39 @@ class GlobusConnector:
         """Get endpoint local to current host."""
         return self.endpoints.get_by_host(hostname())
 
-    def _validate_task_id(self, task_ids: tuple[str, ...]) -> bool:
-        """Validate key contains a real Globus task id."""
-        for tid in task_ids:
-            try:
-                with self._transfer_client_lock:
-                    self._transfer_client.get_task(tid)
-            except globus_sdk.TransferAPIError as e:
-                if e.http_status == 400:
-                    return False
-                raise e
-        return True
+    def _wait_on_tasks(self, task_ids: tuple[str, ...]) -> bool:
+        """Wait on Globus tasks.
 
-    def _wait_on_tasks(self, task_ids: tuple[str, ...]) -> None:
-        """Wait on list of Globus tasks."""
+        Returns:
+            `False` if any of the task IDs is not a real Globus task ID.
+        """
         # This does the same as TransferClient.task_wait() but only holds
         # the client lock while getting the task status, not while sleeping.
         for tid in task_ids:
+            if tid in self._finished_tasks:
+                continue
             deadline = time.monotonic() + self.timeout
             while True:
-                with self._transfer_client_lock:
-                    task = self._transfer_client.get_task(tid)
+                try:
+                    with self._transfer_client_lock:
+                        task = self._transfer_client.get_task(tid)
+                except globus_sdk.TransferAPIError as e:
+                    if e.http_status == 400:
+                        return False
+                    raise
+                if task['status'] in _FINISHED_TASK_STATUSES:
+                    self._finished_tasks.add(tid)
+                    break
                 if task['status'] != 'ACTIVE':
+                    # An inactive task is paused (e.g., its credentials
+                    # expired), so stop waiting but check it again later.
                     break
                 if time.monotonic() + self.polling_interval > deadline:
                     raise RuntimeError(
                         f'Task {tid} did not complete within the timeout',
                     )
                 time.sleep(self.polling_interval)
+        return True
 
     def _transfer_files(
         self,
@@ -603,9 +614,8 @@ class GlobusConnector:
         Returns:
             If an object associated with the key exists.
         """
-        if not self._validate_task_id(key.task_id):
+        if not self._wait_on_tasks(key.task_id):
             return False
-        self._wait_on_tasks(key.task_id)
         return os.path.exists(self._get_filepath(key.filename))
 
     def get(self, key: GlobusKey) -> BytesLike | None:

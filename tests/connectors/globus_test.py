@@ -207,12 +207,12 @@ def test_globus_connector_internals(globus_connector) -> None:
         return _error
 
     connector._transfer_client.get_task = _http_error(400)  # type: ignore[method-assign]
-    assert not connector._validate_task_id(('uuid',))
+    assert not connector._wait_on_tasks(('uuid',))
     assert not connector.exists(GlobusKey('fake', ('fake',)))
 
     connector._transfer_client.get_task = _http_error(401)  # type: ignore[method-assign]
     with pytest.raises(globus_sdk.TransferAPIError):
-        connector._validate_task_id(('uuid',))
+        connector._wait_on_tasks(('uuid',))
 
 
 def test_globus_connector_wait_on_tasks(globus_connector) -> None:
@@ -235,6 +235,44 @@ def test_globus_connector_wait_on_tasks(globus_connector) -> None:
 
     assert mock_get_task.call_count == 3
     assert mock_sleep.call_count == 2
+
+
+def test_globus_connector_remembers_finished_tasks(globus_connector) -> None:
+    connector = GlobusConnector.from_config(globus_connector.config())
+
+    statuses = {'1': 'SUCCEEDED', '2': 'FAILED', '3': 'INACTIVE'}
+
+    def _get_task(task_id: str) -> dict[str, str]:
+        return {'task_id': task_id, 'status': statuses[task_id]}
+
+    with mock.patch.object(
+        connector._transfer_client,
+        'get_task',
+        side_effect=_get_task,
+    ) as mock_get_task:
+        assert connector._wait_on_tasks(('1', '2', '3'))
+        assert mock_get_task.call_count == 3
+        # Only the inactive task, which can still change, is checked again.
+        assert connector._wait_on_tasks(('1', '2', '3'))
+        assert mock_get_task.call_count == 4
+        mock_get_task.assert_called_with('3')
+
+
+def test_globus_connector_get_checks_task_once(globus_connector) -> None:
+    connector = GlobusConnector.from_config(globus_connector.config())
+    key = connector.put(b'value')
+
+    with mock.patch.object(
+        connector._transfer_client,
+        'get_task',
+        wraps=connector._transfer_client.get_task,
+    ) as mock_get_task:
+        assert connector.get(key) == b'value'
+        assert mock_get_task.call_count == len(key.task_id)
+        assert connector.get_batch([key, key]) == [b'value', b'value']
+        assert mock_get_task.call_count == len(key.task_id)
+
+    connector.close()
 
 
 def test_globus_connector_wait_on_tasks_timeout(globus_connector) -> None:
