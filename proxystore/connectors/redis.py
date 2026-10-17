@@ -6,6 +6,7 @@ import uuid
 from collections.abc import Sequence
 from types import TracebackType
 from typing import Any
+from typing import cast
 from typing import NamedTuple
 from typing import Self
 
@@ -28,6 +29,34 @@ class RedisKey(NamedTuple):
 class RedisConnector:
     """Redis server connector.
 
+    Example:
+        Connect to a Redis server which requires a password and TLS.
+
+        ```python
+        from proxystore.connectors.redis import RedisConnector
+
+        connector = RedisConnector(
+            'redis.example.com',
+            6380,
+            client_options={
+                'username': 'proxystore',
+                'password': '...',
+                'ssl': True,
+                'ssl_ca_certs': '/path/to/ca.pem',
+            },
+        )
+        ```
+
+    Warning:
+        The `client_options` are part of the
+        [`config()`][proxystore.connectors.redis.RedisConnector.config] of
+        the connector, so a password in them is included in every proxy
+        made by a [`Store`][proxystore.store.base.Store] using this
+        connector, and in a
+        [`StoreConfig`][proxystore.store.config.StoreConfig] written to a
+        TOML file. Anyone who can read a proxy (e.g., in logs or a task
+        database) or the file can read the password.
+
     Args:
         hostname: Redis server hostname.
         port: Redis server port.
@@ -35,13 +64,48 @@ class RedisConnector:
             [`close()`][proxystore.connectors.redis.RedisConnector.close]
             is called. This will delete keys regardless of if they were
             created by ProxyStore or not.
+        client_options: Keyword arguments passed to the
+            [`redis.Redis`](https://redis.readthedocs.io/en/stable/connections.html#redis.Redis){target=_blank}
+            client, such as `username`, `password`, `db`, `ssl`, and the
+            other `ssl_*` options. The values must be picklable so proxies
+            can be sent to other processes, and must be types TOML supports
+            (e.g., not `None`) to write a
+            [`StoreConfig`][proxystore.store.config.StoreConfig] to a file.
+
+    Raises:
+        ValueError: If `client_options` contains `host` or `port`, which
+            are set by `hostname` and `port`, or `decode_responses`, because
+            the connector stores bytes.
     """
 
-    def __init__(self, hostname: str, port: int, clear: bool = False) -> None:
+    def __init__(
+        self,
+        hostname: str,
+        port: int,
+        clear: bool = False,
+        client_options: dict[str, Any] | None = None,
+    ) -> None:
+        client_options = dict(client_options or {})
+        conflicts = sorted({'host', 'port'} & client_options.keys())
+        if conflicts:
+            raise ValueError(
+                f'The client options cannot contain {conflicts}. Use the '
+                'hostname and port arguments instead.',
+            )
+        if 'decode_responses' in client_options:
+            raise ValueError(
+                'The client options cannot contain decode_responses because '
+                'the connector stores bytes.',
+            )
         self.hostname = hostname
         self.port = port
         self.clear = clear
-        self._redis_client = redis.StrictRedis(host=hostname, port=port)
+        self.client_options = client_options
+        self._redis_client = redis.StrictRedis(
+            host=hostname,
+            port=port,
+            **client_options,
+        )
 
     def __enter__(self) -> Self:
         return self
@@ -93,6 +157,7 @@ class RedisConnector:
             'hostname': self.hostname,
             'port': self.port,
             'clear': self.clear,
+            'client_options': dict(self.client_options),
         }
 
     @classmethod
@@ -132,7 +197,8 @@ class RedisConnector:
         Returns:
             Serialized object or `None` if the object does not exist.
         """
-        return self._redis_client.get(key.redis_key)  # type: ignore[return-value]
+        # Responses are bytes because decode_responses is not allowed.
+        return cast(BytesLike | None, self._redis_client.get(key.redis_key))
 
     def get_batch(self, keys: Sequence[RedisKey]) -> list[BytesLike | None]:
         """Get a batch of serialized objects associated with the keys.
@@ -147,7 +213,10 @@ class RedisConnector:
         if len(keys) == 0:
             # Redis does not accept MGET without any keys.
             return []
-        return self._redis_client.mget([key.redis_key for key in keys])  # type: ignore[return-value]
+        return cast(
+            list[BytesLike | None],
+            self._redis_client.mget([key.redis_key for key in keys]),
+        )
 
     def new_key(self, obj: BytesLike | None = None) -> RedisKey:
         """Create a new key.

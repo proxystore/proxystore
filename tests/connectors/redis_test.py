@@ -1,5 +1,8 @@
 from __future__ import annotations
 
+from typing import Any
+from unittest import mock
+
 import pytest
 import redis
 
@@ -54,3 +57,31 @@ def test_mocked_redis_rejects_empty_batch() -> None:
         client.mget([])
     with pytest.raises(redis.exceptions.ResponseError, match='mset'):
         client.mset({})
+
+
+def test_client_options_passed_to_client() -> None:
+    options = {'username': 'user', 'password': 'secret', 'ssl': True}
+    with mock.patch('redis.StrictRedis') as client:
+        connector = RedisConnector('localhost', 0, client_options=options)
+    client.assert_called_once_with(host='localhost', port=0, **options)
+
+    # Options are kept in the config so connectors made from the config in
+    # other processes can connect to the same server.
+    config = connector.config()
+    assert config['client_options'] == options
+    with mock.patch('redis.StrictRedis') as client:
+        RedisConnector.from_config(config)
+    client.assert_called_once_with(host='localhost', port=0, **options)
+
+    # Changing the dict passed in later does not change the connector.
+    options['password'] = 'changed'
+    assert connector.config()['client_options']['password'] == 'secret'
+
+
+@pytest.mark.parametrize(
+    'options',
+    ({'host': 'other'}, {'port': 1}, {'decode_responses': True}),
+)
+def test_client_options_invalid(options: dict[str, Any]) -> None:
+    with pytest.raises(ValueError, match='client options cannot contain'):
+        RedisConnector('localhost', 0, client_options=options)
