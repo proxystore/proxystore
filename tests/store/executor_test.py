@@ -1,10 +1,13 @@
 from __future__ import annotations
 
+import contextlib
 import gc
+import logging
 import multiprocessing
 import os
 import pathlib
 from collections.abc import Callable
+from collections.abc import Generator
 from collections.abc import Iterable
 from collections.abc import Iterator
 from concurrent.futures import Executor
@@ -12,14 +15,19 @@ from concurrent.futures import Future
 from concurrent.futures import ProcessPoolExecutor
 from concurrent.futures import ThreadPoolExecutor
 from typing import Any
+from typing import cast
 from typing import ParamSpec
 from typing import TypeVar
+from unittest import mock
 
 import pytest
 
+import proxystore.store.executor as executor_module
 from proxystore.connectors.file import FileConnector
 from proxystore.connectors.local import LocalConnector
 from proxystore.proxy import Proxy
+from proxystore.serialize import SerializationError
+from proxystore.serialize import serialize
 from proxystore.store._evictions import evictions
 from proxystore.store.base import Store
 from proxystore.store.executor import _FunctionWrapper
@@ -274,3 +282,129 @@ def test_warn_unsupported_shutdown_method() -> None:
     executor = StoreExecutor(BadExecutor(), store)  # type: ignore[arg-type]
     with pytest.warns(RuntimeWarning, match='Cannot shutdown BadExecutor'):
         executor.shutdown()
+
+
+@contextlib.contextmanager
+def _str_executor(
+    base: Executor | None = None,
+) -> Generator[tuple[StoreExecutor, LocalConnector], None, None]:
+    # Only str inputs are proxied, so the objects in the connector are
+    # inputs and not results.
+    connector = LocalConnector()
+    store = Store(connector)
+    base = ThreadPoolExecutor(max_workers=2) if base is None else base
+    with StoreExecutor(
+        base,
+        store,
+        should_proxy=ProxyType(str),
+        ownership=False,
+        close_store=False,
+    ) as executor:
+        yield executor, connector
+    store.close()
+
+
+def test_function_wrappers_are_bounded() -> None:
+    with (
+        _str_executor() as (executor, _),
+        mock.patch.object(executor_module, '_MAX_WRAPPERS', 2),
+    ):
+        functions = [lambda x, i=i: x + i for i in range(3)]
+        executor.submit(functions[0], 1).result()
+        executor.submit(functions[1], 1).result()
+        # Using the first function again keeps it over the second.
+        executor.submit(functions[0], 1).result()
+        executor.submit(functions[2], 1).result()
+        assert list(executor._registered) == [functions[0], functions[2]]
+
+
+def test_submit_error_evicts_inputs() -> None:
+    base = ThreadPoolExecutor(max_workers=1)
+    base.shutdown()
+    with _str_executor(base) as (executor, connector):
+        with pytest.raises(RuntimeError, match='shutdown'):
+            executor.submit(len, 'value')
+        assert len(connector._store) == 0
+
+
+def test_submit_argument_error_evicts_inputs() -> None:
+    with _str_executor() as (executor, connector):
+        executor.store._serializer = mock.MagicMock(
+            side_effect=[serialize('first'), SerializationError('failed')],
+        )
+
+        def _function(first: str, *, kw: str) -> None:
+            pass  # pragma: no cover
+
+        with pytest.raises(SerializationError, match='failed'):
+            executor.submit(_function, 'first', kw='second')
+        assert len(connector._store) == 0
+
+
+def test_map_error_evicts_inputs() -> None:
+    base = ThreadPoolExecutor(max_workers=1)
+    base.shutdown()
+    with _str_executor(base) as (executor, connector):
+        with pytest.raises(RuntimeError, match='shutdown'):
+            executor.map(len, ['a', 'b'])
+        assert len(connector._store) == 0
+
+
+def test_map_task_error_evicts_inputs() -> None:
+    def _fail(value: str) -> int:
+        if value == 'b':
+            raise ValueError(value)
+        return len(value)
+
+    with _str_executor() as (executor, connector):
+        results = executor.map(_fail, ['a', 'b', 'c'])
+        assert next(results) == 1
+        with pytest.raises(ValueError, match='b'):
+            next(results)
+        assert len(connector._store) == 0
+        with pytest.raises(StopIteration):
+            next(results)
+
+
+def test_map_closed_early_evicts_inputs() -> None:
+    with _str_executor() as (executor, connector):
+        results = executor.map(len, ['a', 'b', 'c'])
+        assert next(results) == 1
+        assert isinstance(results, executor_module._MapResults)
+        results.close()
+        assert len(connector._store) == 0
+        # Closing again does nothing.
+        results.close()
+
+
+def test_map_deleted_early_evicts_inputs() -> None:
+    with _str_executor() as (executor, connector):
+        results = executor.map(len, ['a', 'b', 'c'])
+        assert len(connector._store) == 3
+        del results
+        gc.collect()
+        evictions.wait()
+        assert len(connector._store) == 0
+
+
+def test_evict_errors_are_logged(caplog: pytest.LogCaptureFixture) -> None:
+    caplog.set_level(logging.ERROR)
+    with _str_executor() as (executor, connector):
+        with mock.patch.object(
+            executor.store,
+            'evict',
+            side_effect=RuntimeError('failed'),
+        ):
+            assert list(executor.map(len, ['a', 'b'])) == [1, 1]
+        assert caplog.text.count('Failed to evict input') == 2
+        connector._store.clear()
+
+
+def test_map_closed_early_with_dask_like_client() -> None:
+    client: Any = DaskLikeClient()
+    with _str_executor(client) as (executor, connector):
+        results = executor.map(len, ['a', 'b'])
+        assert next(results) == 1
+        # The results of the client are a list iterator without close().
+        cast(Any, results).close()
+        assert len(connector._store) == 0
