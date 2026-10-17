@@ -41,7 +41,6 @@ of `T`, forwarding operations on themselves to a locally cached instance of
 from __future__ import annotations
 
 import atexit
-import copy
 import itertools
 import logging
 import threading
@@ -440,13 +439,10 @@ def _copy_attributes(
     source: Proxy[T],
     dest: Proxy[T],
     *,
-    deepcopy: bool = False,
+    populate_target: bool = True,
 ) -> None:
-    if source.__proxy_resolved__:
-        target = source.__proxy_wrapped__
-        if deepcopy:
-            target = copy.deepcopy(target)
-        dest.__proxy_wrapped__ = target
+    if populate_target and source.__proxy_resolved__:
+        dest.__proxy_wrapped__ = source.__proxy_wrapped__
 
     default_class = object.__getattribute__(source, '__proxy_default_class__')
     default_hash = object.__getattribute__(source, '__proxy_default_hash__')
@@ -533,27 +529,37 @@ def mut_borrow(
 def clone(proxy: OwnedProxy[T]) -> OwnedProxy[T]:
     """Clone the target object.
 
-    Creates a new copy of `T` in the global store. If `proxy` is in
-    the resolved state, the local version of `T` belonging to `proxy` will
-    be deepcopied into the cloned proxy.
+    Creates a new copy of `T` in the global store by copying the stored
+    object, and returns a new owner of the copy. The copy is made when
+    `clone()` is called, so it does not change if `proxy` is updated or
+    evicted later. The returned proxy is not resolved, even if `proxy` is,
+    so it resolves its own copy from the store when first used.
 
     Raises:
         ReferenceNotOwnedError: if `proxy` is not an
             [`OwnedProxy`][proxystore.store.ref.OwnedProxy] instance.
+        MutableBorrowError: if `proxy` is mutably borrowed, because the
+            changes of the borrow may not be written to the store yet.
+        ProxyResolveMissingKeyError: if the object of `proxy` is not in the
+            store.
     """
     if not isinstance(proxy, OwnedProxy):
         raise ReferenceNotOwnedError('Only owned references can be cloned.')
+    if object.__getattribute__(proxy, '__proxy_ref_mut_count__') > 0:
+        raise MutableBorrowError(
+            'Cannot clone a proxy which is borrowed as mutable.',
+        )
     factory = proxy.__proxy_factory__
     store = factory.get_store()
-    data = store.connector.get(factory.key)
-    new_key = store.connector.put(data)
     new_factory: StoreFactory[Any, T] = StoreFactory(
-        new_key,
+        store._copy(factory.key),
         store_config=store.config(),
         evict=factory.evict,
     )
     owned = OwnedProxy(new_factory)
-    _copy_attributes(proxy, owned, deepcopy=True)
+    # The default class and hash are copied so the clone can be used in
+    # isinstance() and hash() without resolving it.
+    _copy_attributes(proxy, owned, populate_target=False)
     return owned
 
 

@@ -884,6 +884,20 @@ def test_precompute_unhashable() -> None:
     assert not proxy.__proxy_resolved__
 
 
+def test_precompute_unhashable_does_not_reference_proxy() -> None:
+    target = [1, 2, 3]
+    proxy = Proxy(
+        lambda: target,  # pragma: no cover
+        cache_defaults=True,
+        target=target,
+    )
+    # The traceback of the hash error would reference the frame which made
+    # the proxy and so the proxy itself.
+    error = object.__getattribute__(proxy, '__proxy_default_hash__')
+    assert isinstance(error, TypeError)
+    assert error.__traceback__ is None
+
+
 def test_generic_alias_type_checking() -> None:
     my_dict_proxy = Proxy(lambda: {'a': 1, 'b': 2})
     assert isinstance(my_dict_proxy, dict)

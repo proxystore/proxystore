@@ -34,6 +34,7 @@ from proxystore.store.cache import LRUCache
 from proxystore.store.config import ConnectorConfig
 from proxystore.store.config import StoreConfig
 from proxystore.store.exceptions import NonProxiableTypeError
+from proxystore.store.exceptions import ProxyResolveMissingKeyError
 from proxystore.store.factory import PollingStoreFactory
 from proxystore.store.factory import StoreFactory
 from proxystore.store.future import PollingPolicy
@@ -623,6 +624,57 @@ class Store(Generic[ConnectorT]):
             key,
             timer.elapsed_ms,
         )
+
+    def _copy(self: Store[Connector[KeyT]], key: KeyT) -> KeyT:
+        """Copy the serialized object of a key to a new key.
+
+        The data is copied without deserializing it.
+
+        Returns:
+            Key of the copy.
+
+        Raises:
+            ProxyResolveMissingKeyError: If no object is associated with
+                `key`.
+        """
+        timer = Timer().start()
+
+        with Timer() as get_timer:
+            data = self.connector.get(key)
+        if data is None:
+            raise ProxyResolveMissingKeyError(
+                key,
+                type(self),
+                self.name,
+                self.id,
+            )
+
+        with Timer() as put_timer:
+            new_key = self.connector.put(data)
+
+        timer.stop()
+        if self.metrics is not None:
+            self.metrics.add_time('store.copy.get', key, get_timer.elapsed_ms)
+            self.metrics.add_attribute(
+                'store.copy.object_size',
+                new_key,
+                len(data),
+            )
+            self.metrics.add_time(
+                'store.copy.put',
+                new_key,
+                put_timer.elapsed_ms,
+            )
+            self.metrics.add_time('store.copy', new_key, timer.elapsed_ms)
+
+        logger.debug(
+            'Store(%s): COPY %s to %s in %.3f ms',
+            self._label,
+            key,
+            new_key,
+            timer.elapsed_ms,
+        )
+        return new_key
 
     def exists(self: Store[Connector[KeyT]], key: KeyT) -> bool:
         """Check if an object associated with the key exists.
