@@ -8,6 +8,7 @@ import threading
 import time
 from concurrent.futures import Future
 from concurrent.futures import ThreadPoolExecutor
+from threading import Event
 from typing import Any
 from typing import cast
 from typing import Generic
@@ -61,6 +62,56 @@ def _reset_default_pool_after_fork() -> None:
 if hasattr(os, 'register_at_fork'):  # pragma: no branch
     os.register_at_fork(after_in_child=_reset_default_pool_after_fork)
 
+# Guards the resolve in progress of every factory. It is only held to read
+# or change that state, never while resolving. Reentrant in case the garbage
+# collector runs code which calls a factory while this thread holds it.
+_resolve_lock = threading.RLock()
+# Incremented in a forked child so resolves started before the fork, which
+# never finish in the child, are ignored. Cheaper to check than os.getpid().
+_fork_generation = 0
+
+
+def _reset_resolve_lock_after_fork() -> None:
+    global _resolve_lock, _fork_generation  # noqa: PLW0603
+    # The lock may have been held by another thread of the parent.
+    _resolve_lock = threading.RLock()
+    _fork_generation += 1
+
+
+if hasattr(os, 'register_at_fork'):  # pragma: no branch
+    os.register_at_fork(after_in_child=_reset_resolve_lock_after_fork)
+
+
+class _Resolve:
+    """A resolve of a factory in progress, which other calls wait on."""
+
+    __slots__ = (
+        'done',
+        'error',
+        'event',
+        'future',
+        'generation',
+        'thread',
+        'value',
+    )
+
+    def __init__(self, thread: int | None) -> None:
+        # Thread resolving the object, so a call from that thread while it
+        # resolves (e.g., by a deserializer) resolves again rather than
+        # waiting on itself. Set by the pool thread for resolve_async().
+        self.thread = thread
+        # Fork generation of the process which started the resolve. A
+        # forked child gets a copy which never finishes, so it is ignored.
+        self.generation = _fork_generation
+        self.done = False
+        self.value: Any = None
+        self.error: BaseException | None = None
+        # Made by the first call which waits, so a call without other
+        # threads does not pay for it.
+        self.event: Event | None = None
+        # Set by resolve_async(). The result is kept until a call takes it.
+        self.future: Future[Any] | None = None
+
 
 class StoreFactory(Generic[ConnectorT, T]):
     """Factory that resolves an object from a store.
@@ -71,6 +122,11 @@ class StoreFactory(Generic[ConnectorT, T]):
     The factory takes the `store_config` parameter that is
     used to reinitialize the store if the factory is sent to a remote
     process where the store has not already been initialized.
+
+    Calls to the factory from threads while another call (or
+    [`resolve_async()`][proxystore.store.factory.StoreFactory.resolve_async])
+    is resolving the object wait for that result, so the object is resolved
+    once and every thread gets the same object.
 
     Args:
         key: Key corresponding to object in store.
@@ -94,21 +150,13 @@ class StoreFactory(Generic[ConnectorT, T]):
         self.store_config = store_config
         self.evict = evict
 
-        # The following are not included when a factory is serialized
-        # because they are specific to that instance of the factory
-        self._obj_future: Future[T] | None = None
-        # ID of the process which started _obj_future. A forked child gets
-        # a copy of the future which never finishes, so it is ignored.
-        self._obj_future_pid: int | None = None
+        # Not included when a factory is serialized because it is specific
+        # to this instance of the factory.
+        self._resolve: _Resolve | None = None
 
     def __call__(self) -> T:
         with Timer() as timer:
-            future = self._obj_future
-            self._obj_future = None
-            if future is not None and self._obj_future_pid == os.getpid():
-                obj = future.result()
-            else:
-                obj = self.resolve()
+            obj = self._resolve_once()
 
         store = self.get_store()
         if store.metrics is not None:
@@ -143,8 +191,7 @@ class StoreFactory(Generic[ConnectorT, T]):
         self.key = state['key']
         self.store_config = state['store_config']
         self.evict = state.get('evict', False)
-        self._obj_future = None
-        self._obj_future_pid = None
+        self._resolve = None
 
     def get_store(self) -> Store[ConnectorT]:
         """Get store and reinitialize if necessary.
@@ -186,12 +233,92 @@ class StoreFactory(Generic[ConnectorT, T]):
         return cast(T, obj)
 
     def resolve_async(self) -> None:
-        """Asynchronously get object associated with key from store."""
-        logger.debug('Starting asynchronous resolve of %s', self.key)
-        # The PID is set first so __call__ in another thread never sees the
-        # new future with an old PID.
-        self._obj_future_pid = os.getpid()
-        self._obj_future = _get_default_pool().submit(self.resolve)
+        """Asynchronously get object associated with key from store.
+
+        Nothing happens if the object is already being resolved.
+        """
+        with _resolve_lock:
+            current = self._resolve
+            if current is not None and current.generation == _fork_generation:
+                return
+            logger.debug('Starting asynchronous resolve of %s', self.key)
+            resolve = _Resolve(thread=None)
+            resolve.future = _get_default_pool().submit(
+                self._resolve_in_pool,
+                resolve,
+            )
+            self._resolve = resolve
+
+    def _resolve_in_pool(self, resolve: _Resolve) -> T:
+        resolve.thread = threading.get_ident()
+        return self.resolve()
+
+    def _resolve_once(self) -> T:
+        # Calls from other threads while the object is being resolved wait
+        # for that result, so the object is resolved once and every thread
+        # gets the same object.
+        thread = threading.get_ident()
+        with _resolve_lock:
+            current = self._resolve
+            if current is None or current.generation != _fork_generation:
+                current = _Resolve(thread)
+                self._resolve = current
+                role = 'owner'
+            elif current.thread == thread:
+                role = 'reentrant'
+            else:
+                role = 'waiter'
+                # A finished resolve is never seen here because it is
+                # removed when it finishes.
+                if current.future is None and current.event is None:
+                    current.event = Event()
+
+        if role == 'reentrant':
+            # Called while this thread resolves the object.
+            return self.resolve()
+        if role == 'waiter':
+            return self._wait(current)
+
+        try:
+            obj = self.resolve()
+        except BaseException as e:
+            self._finish(current, error=e)
+            raise
+        self._finish(current, value=obj)
+        return obj
+
+    def _finish(
+        self,
+        resolve: _Resolve,
+        *,
+        value: Any = None,
+        error: BaseException | None = None,
+    ) -> None:
+        with _resolve_lock:
+            resolve.value = value
+            resolve.error = error
+            resolve.done = True
+            if self._resolve is resolve:
+                self._resolve = None
+            event = resolve.event
+        if event is not None:
+            event.set()
+
+    def _wait(self, resolve: _Resolve) -> T:
+        if resolve.future is not None:
+            try:
+                return resolve.future.result()
+            finally:
+                # Taking the result of resolve_async() means later calls
+                # resolve again, as they did before it was used.
+                with _resolve_lock:
+                    if self._resolve is resolve:
+                        self._resolve = None
+        assert resolve.event is not None
+        resolve.event.wait()
+        if resolve.error is not None:
+            raise resolve.error
+        return cast(T, resolve.value)
 
 
 class PollingStoreFactory(StoreFactory[ConnectorT, T]):

@@ -71,9 +71,9 @@ def test_factory_resolve_async(store: Store[LocalConnector]) -> None:
         store_config=store.config(),
     )
     f.resolve_async()
-    assert f._obj_future is not None
+    assert f._resolve is not None
     assert f() == [1, 2, 3]
-    assert f._obj_future is None
+    assert f._resolve is None
 
 
 def test_factory_resolve_async_future_from_parent(
@@ -86,10 +86,12 @@ def test_factory_resolve_async_future_from_parent(
     )
     # The future of a resolve_async() started by the parent before a fork
     # never finishes in the child, so the child resolves the object itself.
-    f._obj_future = Future()
-    f._obj_future_pid = -1
+    resolve = factory_module._Resolve(thread=None)
+    resolve.future = Future()
+    resolve.generation = -1
+    f._resolve = resolve
     assert f() == [1, 2, 3]
-    assert f._obj_future is None
+    assert f._resolve is None
 
 
 def test_factory_resolve_async_after_fork(
