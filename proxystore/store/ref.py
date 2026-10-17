@@ -58,8 +58,8 @@ from proxystore.proxy import DefaultClassType
 from proxystore.proxy import DefaultHashType
 from proxystore.proxy import is_resolved
 from proxystore.proxy import Proxy
+from proxystore.store._evictions import evictions
 from proxystore.store.exceptions import ProxyStoreFactoryError
-from proxystore.store.exceptions import StoreClosedError
 from proxystore.store.factory import StoreFactory
 
 T = TypeVar('T')
@@ -126,6 +126,8 @@ def _finalize_live_refs() -> None:
                 'Failed to finalize %s at exit',
                 type(proxy).__name__,
             )
+    # Finalizing owned proxies only queues their evictions.
+    evictions.wait()
 
 
 # Pickled reference proxies reference this function by its import path and
@@ -247,8 +249,10 @@ class OwnedProxy(BaseRefProxy[T]):
 
     This class maintains reference counts of the number of immutable and
     mutable borrows of this proxy. The target object will be evicted from
-    the store once this proxy goes out of scope (this is handled via
-    `__del__` and an [atexit][atexit] handler).
+    the store by a background thread shortly after this proxy goes out of
+    scope (this is handled via `__del__` and an [atexit][atexit] handler).
+    [`Store.close()`][proxystore.store.base.Store.close] and the exit of the
+    program wait for these evictions.
 
     Pickling this proxy moves ownership to the pickled copy and invalidates
     this proxy, so an owned proxy can only be pickled once. Use
@@ -284,6 +288,8 @@ class OwnedProxy(BaseRefProxy[T]):
         object.__setattr__(self, '__proxy_ref_mut_count__', 0)
         super().__init__(factory, cache_defaults=cache_defaults, target=target)
         _track_ref(self)
+        # Started here because __del__ cannot start a thread.
+        evictions.start()
 
     def __reduce__(  # type: ignore[override]
         self,
@@ -328,14 +334,10 @@ class OwnedProxy(BaseRefProxy[T]):
                     f'exists {ref_count} RefProxy and {ref_mut_count} '
                     'RefMutProxy.',
                 )
-            factory = object.__getattribute__(self, '__proxy_factory__')
-            try:
-                store = factory.get_store()
-            except StoreClosedError:
-                # The owner of the store already removed all of its objects.
-                pass
-            else:
-                store.evict(factory.key)
+            # Evicting takes locks which this thread may already hold if
+            # the garbage collector called this, so it is done later by
+            # another thread.
+            evictions.put(object.__getattribute__(self, '__proxy_factory__'))
             object.__setattr__(self, '__proxy_valid__', False)
 
 

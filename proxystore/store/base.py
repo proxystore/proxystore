@@ -28,6 +28,7 @@ from proxystore.proxy import ProxyLocker
 from proxystore.serialize import BytesLike
 from proxystore.serialize import is_bytes_like
 from proxystore.serialize import SerializationError
+from proxystore.store._evictions import evictions
 from proxystore.store.cache import DEFAULT_CACHE_SIZE_BYTES
 from proxystore.store.cache import LRUCache
 from proxystore.store.config import ConnectorConfig
@@ -371,6 +372,10 @@ class Store(Generic[ConnectorT]):
                 the [`owner`][proxystore.store.base.Store.owner] and the
                 connector is not cleared otherwise.
         """
+        # Deleted owned proxies of this store may still be waiting to evict
+        # their objects, which needs this store to be registered.
+        evictions.wait()
+
         if clear is None and not self.owner:
             clear = False
 
