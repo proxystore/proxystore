@@ -64,7 +64,7 @@ class ConnectorConfig(BaseModel):
             of the constructor.
     """
 
-    model_config = ConfigDict(extra='forbid')
+    model_config = ConfigDict(extra='forbid', frozen=True)
 
     kind: str
     options: dict[str, Any] = Field(default_factory=dict)
@@ -157,7 +157,7 @@ class StoreConfig(BaseModel):
             parameter of proxy methods.
     """
 
-    model_config = ConfigDict(extra='forbid')
+    model_config = ConfigDict(extra='forbid', frozen=True)
 
     id: str | None = Field(None)
     name: str | None = Field(None)

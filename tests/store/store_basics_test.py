@@ -256,7 +256,7 @@ def test_set() -> None:
 def test_set_bad_connector_type(store: Store[LocalConnector]) -> None:
     key = store.connector.new_key()
     with (
-        mock.patch.object(store, 'connector', object()),
+        mock.patch.object(store, '_connector', object()),
         pytest.raises(NotImplementedError, match='DeferrableConnector'),
     ):
         store._set(key, 'new-value')
@@ -351,7 +351,7 @@ def test_future_in_threads(store: Store[LocalConnector]) -> None:
 
 def test_future_bad_connector_type(store: Store[LocalConnector]) -> None:
     with (
-        mock.patch.object(store, 'connector', object()),
+        mock.patch.object(store, '_connector', object()),
         pytest.raises(NotImplementedError, match='DeferrableConnector'),
     ):
         store.future()
@@ -501,3 +501,11 @@ def test_key_types(tmp_path: pathlib.Path) -> None:
         # Stores with any connector can be used as Store[Any].
         generic: Store[Any] = store
         assert_type(generic.put('d'), Any)
+
+
+def test_connector_and_cache_are_read_only() -> None:
+    with Store(LocalConnector()) as store:
+        with pytest.raises(AttributeError):
+            store.connector = LocalConnector()  # type: ignore[misc]
+        with pytest.raises(AttributeError):
+            store.cache = store.cache  # type: ignore[misc]
