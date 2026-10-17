@@ -4324,7 +4324,8 @@ is stored separately in the <code>secret.key</code> file which only the owner ca
 <span class="normal"><a href="#__codelineno-2-14">14</a></span>
 <span class="normal"><a href="#__codelineno-2-15">15</a></span>
 <span class="normal"><a href="#__codelineno-2-16">16</a></span>
-<span class="normal"><a href="#__codelineno-2-17">17</a></span></pre></div></td><td class="code"><div><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1"></a><span class="n">version</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">1</span><span class="w">  </span><span class="c1"># (1)!</span>
+<span class="normal"><a href="#__codelineno-2-17">17</a></span>
+<span class="normal"><a href="#__codelineno-2-18">18</a></span></pre></div></td><td class="code"><div><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1"></a><span class="n">version</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">1</span><span class="w">  </span><span class="c1"># (1)!</span>
 </span><span id="__span-2-2"><a id="__codelineno-2-2" name="__codelineno-2-2"></a><span class="n">name</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"my-endpoint"</span><span class="w">  </span><span class="c1"># (2)!</span>
 </span><span id="__span-2-3"><a id="__codelineno-2-3" name="__codelineno-2-3"></a><span class="n">id</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"ed924cda74a1f625ea4e34bc7f3d4759f298b1a950dc41f87484d24023757173"</span><span class="w">  </span><span class="c1"># (3)!</span>
 </span><span id="__span-2-4"><a id="__codelineno-2-4" name="__codelineno-2-4"></a><span class="n">port</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">8765</span><span class="w">  </span><span class="c1"># (4)!</span>
@@ -4341,6 +4342,7 @@ is stored separately in the <code>secret.key</code> file which only the owner ca
 </span><span id="__span-2-15"><a id="__codelineno-2-15" name="__codelineno-2-15"></a><span class="k">[storage]</span>
 </span><span id="__span-2-16"><a id="__codelineno-2-16" name="__codelineno-2-16"></a><span class="n">backend</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"sqlite"</span><span class="w">  </span><span class="c1"># (12)!</span>
 </span><span id="__span-2-17"><a id="__codelineno-2-17" name="__codelineno-2-17"></a><span class="n">database_path</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"blobs.db"</span><span class="w">  </span><span class="c1"># (13)!</span>
+</span><span id="__span-2-18"><a id="__codelineno-2-18" name="__codelineno-2-18"></a><span class="n">object_ttl</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">86400</span><span class="w">  </span><span class="c1"># (14)!</span>
 </span></code></pre></div></td></tr></table></div>
 <ol>
 <li>Format version of the configuration file. ProxyStore uses this to detect
@@ -4376,6 +4378,16 @@ is stored separately in the <code>secret.key</code> file which only the owner ca
     relative path is relative to the endpoint directory. Use an absolute
     path to store a large database elsewhere, such as a parallel file
     system. Only valid with the <code>"sqlite"</code> backend.</li>
+<li>Optional seconds after an object is stored that it expires and is
+    removed (here, one day), for either backend. Defaults to <code>0</code>, so objects
+    do not expire. Proxies of an expired object fail to resolve, so choose
+    a time longer than objects are needed. With the <code>"memory"</code> backend,
+    <code>max_storage_size</code> (e.g., <code>"8 GiB"</code>, defaults to <code>0</code> for no limit) limits
+    the total size of the stored objects. Storing an object which does not
+    fit fails with a
+    <a class="autorefs autorefs-internal" title="            StorageFullError" href="../../api/endpoint/exceptions/#proxystore.endpoint.exceptions.StorageFullError"><code>StorageFullError</code></a>,
+    and stored objects are never removed to make room. It must be at least
+    <code>max_object_size</code>.</li>
 </ol>
 <div class="admonition tip">
 <p class="admonition-title">Tip</p>
