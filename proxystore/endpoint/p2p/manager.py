@@ -1071,11 +1071,14 @@ async def _read_exact(
 
 def _unsupported_protocol(error: iroh.IrohError) -> bool:
     # The bindings only expose the TLS alert raised when the peer does not
-    # accept the application protocol as a string.
+    # accept the application protocol as a string. The kind of the error is
+    # CONNECT, which other connection errors also have. The string is
+    # checked against iroh in tests/endpoint/p2p/iroh_contract_test.py.
     return "doesn't support any known protocol" in error.message()
 
 
 def _closed_with(reason: str, code: CloseCode) -> bool:
     # The bindings only expose the reason a connection was closed as a string
-    # (e.g., "closed by peer: not allowed (code 1)").
+    # (e.g., "closed by peer: not allowed (code 1)"). The format is checked
+    # against iroh in tests/endpoint/p2p/iroh_contract_test.py.
     return reason.endswith(f'(code {int(code)})')
