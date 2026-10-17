@@ -9,6 +9,7 @@ from unittest import mock
 import pytest
 import uvloop
 
+from proxystore.store._evictions import evictions
 from proxystore.store.registry import registry
 
 # Import fixtures from testing/ so they are known by pytest
@@ -108,6 +109,8 @@ def _disable_n0_services() -> Generator[None, None, None]:
 def _verify_no_registered_stores() -> Generator[None, None, None]:
     yield
 
+    # Evictions of owned proxies deleted by the test can make stores.
+    evictions.wait()
     if len(registry) > 0:  # pragma: no cover
         store_ids = tuple(registry)
         # Clear so the stores left by this test don't fail later tests.

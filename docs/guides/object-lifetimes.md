@@ -161,6 +161,9 @@ An [`OwnedProxy`][proxystore.store.ref.OwnedProxy], created by [`Store.owned_pro
 2. There can only be one [`OwnedProxy[T]`][proxystore.store.ref.OwnedProxy] for any *target* in the global store.
 3. When an [`OwnedProxy[T]`][proxystore.store.ref.OwnedProxy] goes out of scope (e.g., gets garbage collected), the associated *target* is removed from the global store.
 
+The *target* is removed by a background thread shortly after the [`OwnedProxy[T]`][proxystore.store.ref.OwnedProxy] is deleted, rather than by the thread which deleted it, because evicting from inside the garbage collector can deadlock.
+[`Store.close()`][proxystore.store.base.Store.close] and the exit of the program wait for these evictions to finish.
+
 An [`OwnedProxy[T]`][proxystore.store.ref.OwnedProxy] can be borrowed without relinquishing ownership.
 This requires two additional rules.
 

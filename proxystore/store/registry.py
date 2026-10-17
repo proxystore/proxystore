@@ -154,11 +154,13 @@ class StoreRegistry:
             if registered is None or registered is new_store:
                 return new_store
 
-            # A store with this ID was made directly with the Store
-            # constructor while the connector was being built. Use the
-            # registered store so every caller gets the same instance.
-            new_store.close()
-            return registered
+        # A store with this ID was made directly with the Store constructor
+        # while the connector was being built. Use the registered store so
+        # every caller gets the same instance. The new store is closed after
+        # releasing the lock because closing waits for pending evictions,
+        # which may need the lock to get this store.
+        new_store.close()
+        return registered
 
     def register(self, store: Store[Any]) -> None:
         """Register a store.

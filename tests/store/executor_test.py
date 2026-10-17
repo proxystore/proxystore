@@ -20,6 +20,7 @@ import pytest
 from proxystore.connectors.file import FileConnector
 from proxystore.connectors.local import LocalConnector
 from proxystore.proxy import Proxy
+from proxystore.store._evictions import evictions
 from proxystore.store.base import Store
 from proxystore.store.executor import _FunctionWrapper
 from proxystore.store.executor import ProxyAlways
@@ -121,6 +122,7 @@ def test_proxy_behavior(
     # Run the garbage collector to guarantee that __del__ is called on the
     # returned OwnedProxies.
     gc.collect()
+    evictions.wait()
 
     # If ownership is enabled, all of the proxied data should have been
     # evicted at this point so the FileConnector directory should
