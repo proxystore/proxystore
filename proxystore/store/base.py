@@ -228,8 +228,8 @@ class Store(Generic[ConnectorT]):
                 f'Got {cache_mode!r}.',
             )
 
-        self.connector = connector
-        self.cache: LRUCache[ConnectorKeyT, Any] = LRUCache(
+        self._connector = connector
+        self._cache: LRUCache[ConnectorKeyT, Any] = LRUCache(
             cache_size_bytes,
         )
         self._id = _id if _id is not None else uuid.uuid4().hex
@@ -245,7 +245,9 @@ class Store(Generic[ConnectorT]):
         self._deserializer = deserializer
         self._populate_target = populate_target
         self._owner = owner
-        self._config: StoreConfig | None = None
+        # A proxy made by this store holds its configuration, so the
+        # configuration is made once rather than for every proxy.
+        self._config = self._make_config()
         _stores.add(self)
         registry.register(self)
 
@@ -282,6 +284,16 @@ class Store(Generic[ConnectorT]):
         return (
             f'Store(id={self.id}, {name}connector={self.connector}, {params})'
         )
+
+    @property
+    def connector(self) -> ConnectorT:
+        """Connector used by this store for object storage."""
+        return self._connector
+
+    @property
+    def cache(self) -> LRUCache[ConnectorKeyT, Any]:
+        """Cache of objects (or serialized data) in this process."""
+        return self._cache
 
     @property
     def id(self) -> str:
@@ -408,18 +420,13 @@ class Store(Generic[ConnectorT]):
             ```
 
         Note:
-            The configuration is made the first time this is called, and
-            later calls return the same (immutable) object, because a
-            proxy made by this store holds the configuration. Changes to the
-            connector made after the first call are not included.
+            The configuration is made when the store is created, and every
+            call returns the same (immutable) object. Changes made to the
+            connector after the store is created are not included.
 
         Returns:
             Store configuration.
         """
-        # Two threads may both make the configuration the first time, which
-        # is harmless because the configurations are equal.
-        if self._config is None:
-            self._config = self._make_config()
         return self._config
 
     def _make_config(self) -> StoreConfig:
