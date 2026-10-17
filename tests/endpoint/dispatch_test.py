@@ -9,11 +9,13 @@ import pytest
 from proxystore.endpoint.dispatch import Dispatcher
 from proxystore.endpoint.exceptions import PeerConnectionTimeoutError
 from proxystore.endpoint.exceptions import PeerNotAllowedError
+from proxystore.endpoint.exceptions import StorageFullError
 from proxystore.endpoint.identity import EndpointId
 from proxystore.endpoint.protocol import ExistsResult
 from proxystore.endpoint.protocol import Message
 from proxystore.endpoint.protocol import Op
 from proxystore.endpoint.protocol import PingResult
+from proxystore.endpoint.protocol import raise_for_status
 from proxystore.endpoint.protocol import Request
 from proxystore.endpoint.protocol import Status
 from proxystore.endpoint.storage import MemoryStorage
@@ -222,3 +224,13 @@ async def test_forward_ping(peers) -> None:
     assert result.remote_addr is not None
     assert result.remote_addr.startswith('127.0.0.1:')
     assert result.path_rtt_ms is not None
+
+
+async def test_storage_full() -> None:
+    dispatcher = Dispatcher(EndpointId.random(), MemoryStorage(max_size=4))
+    request = Message(Op.SET, Request(key='key').encode(), b'12345')
+
+    response = await dispatcher.handle(request)
+    assert response.code == Status.STORAGE_FULL
+    with pytest.raises(StorageFullError, match='maximum storage size'):
+        raise_for_status(response, Op.SET)

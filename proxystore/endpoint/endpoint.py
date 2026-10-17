@@ -308,9 +308,12 @@ class Endpoint:
                 'Using SQLite database for storage (path: %s)',
                 database_path,
             )
-            return SQLiteStorage(database_path)
+            return SQLiteStorage(database_path, ttl=config.storage.ttl)
         logger.info('Storing objects in memory. Objects are lost on shutdown')
-        return MemoryStorage()
+        return MemoryStorage(
+            max_size=config.storage.storage_size_limit,
+            ttl=config.storage.ttl,
+        )
 
     def _create_peer_manager(
         self,

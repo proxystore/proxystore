@@ -144,6 +144,14 @@ def test_validate_config(bad_cfg: Any, error: str | None) -> None:
         ({'backend': 'sqlite', 'database_path': '/tmp/db'}, None),
         ({'database_path': 'blobs.db'}, 'only used by the "sqlite" backend'),
         ({'backend': 'redis'}, 'memory'),
+        ({'max_storage_size': '8 GiB', 'object_ttl': 60}, None),
+        ({'backend': 'sqlite', 'object_ttl': 0.5}, None),
+        (
+            {'backend': 'sqlite', 'max_storage_size': 100},
+            'only used by the "memory" backend',
+        ),
+        ({'max_storage_size': -1}, r'max_storage_size must be zero'),
+        ({'object_ttl': -1}, r'object_ttl must be zero'),
     ),
 )
 def test_validate_storage_config(options: Any, error: str | None) -> None:
@@ -152,6 +160,40 @@ def test_validate_storage_config(options: Any, error: str | None) -> None:
     else:
         with pytest.raises(ValueError, match=error):
             EndpointStorageConfig(**options)
+
+
+def test_storage_limits() -> None:
+    config = EndpointStorageConfig()
+    assert config.storage_size_limit is None
+    assert config.ttl is None
+
+    config = EndpointStorageConfig(max_storage_size='1 KiB', object_ttl=30)
+    assert config.max_storage_size == 1024
+    assert config.storage_size_limit == 1024
+    assert config.ttl == 30
+
+
+@pytest.mark.parametrize(
+    ('max_object_size', 'max_storage_size', 'valid'),
+    ((100, 100, True), (100, 1000, True), (1000, 100, False), (0, 100, False)),
+)
+def test_storage_size_at_least_object_size(
+    max_object_size: int,
+    max_storage_size: int,
+    valid: bool,
+) -> None:
+    options: dict[str, Any] = {
+        'name': 'name',
+        'id': EndpointId.random(),
+        'port': 1234,
+        'max_object_size': max_object_size,
+        'storage': {'max_storage_size': max_storage_size},
+    }
+    if valid:
+        EndpointConfig(**options)
+    else:
+        with pytest.raises(ValueError, match='at least the max_object_size'):
+            EndpointConfig(**options)
 
 
 def test_object_size_limit() -> None:

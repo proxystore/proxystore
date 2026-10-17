@@ -275,6 +275,29 @@ async def test_endpoint_database_path(
     assert os.path.isfile(expected)
 
 
+async def test_endpoint_storage_limits(tmp_path: pathlib.Path) -> None:
+    storage = EndpointStorageConfig(max_storage_size=200, object_ttl=30)
+    endpoint_dir, _ = _endpoint_dir(
+        tmp_path,
+        max_object_size=100,
+        storage=storage,
+    )
+    async with Endpoint(endpoint_dir) as endpoint:
+        memory = endpoint.dispatcher.storage
+        assert isinstance(memory, MemoryStorage)
+        assert memory.max_size == 200
+        assert memory.ttl == 30
+
+
+async def test_endpoint_sqlite_ttl(tmp_path: pathlib.Path) -> None:
+    storage = EndpointStorageConfig(backend='sqlite', object_ttl=30)
+    endpoint_dir, _ = _endpoint_dir(tmp_path, storage=storage)
+    async with Endpoint(endpoint_dir) as endpoint:
+        sqlite = endpoint.dispatcher.storage
+        assert isinstance(sqlite, SQLiteStorage)
+        assert sqlite.ttl == 30
+
+
 async def test_endpoint_lifecycle(tmp_path: pathlib.Path) -> None:
     endpoint_dir, config = _endpoint_dir(tmp_path)
     endpoint = Endpoint(endpoint_dir)

@@ -99,6 +99,7 @@ request_timeout = 60  # (11)!
 [storage]
 backend = "sqlite"  # (12)!
 database_path = "blobs.db"  # (13)!
+object_ttl = 86400  # (14)!
 ```
 
 1. Format version of the configuration file. ProxyStore uses this to detect
@@ -134,6 +135,16 @@ database_path = "blobs.db"  # (13)!
     relative path is relative to the endpoint directory. Use an absolute
     path to store a large database elsewhere, such as a parallel file
     system. Only valid with the `"sqlite"` backend.
+14. Optional seconds after an object is stored that it expires and is
+    removed (here, one day), for either backend. Defaults to `0`, so objects
+    do not expire. Proxies of an expired object fail to resolve, so choose
+    a time longer than objects are needed. With the `"memory"` backend,
+    `max_storage_size` (e.g., `"8 GiB"`, defaults to `0` for no limit) limits
+    the total size of the stored objects. Storing an object which does not
+    fit fails with a
+    [`StorageFullError`][proxystore.endpoint.exceptions.StorageFullError],
+    and stored objects are never removed to make room. It must be at least
+    `max_object_size`.
 
 !!! tip
 
