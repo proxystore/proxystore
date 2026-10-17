@@ -11,19 +11,14 @@ from __future__ import annotations
 
 import asyncio
 import pathlib
-import time
+from time import monotonic
+from time import time
 from typing import Protocol
 
 import aiosqlite
 
 from proxystore.endpoint.exceptions import StorageFullError
 from proxystore.endpoint.protocol import MessageData
-
-# Clocks of the storages, which tests replace. Memory storage uses a clock
-# which is not changed by updates to the system time. SQLite storage keeps
-# expiry times in the database across restarts so it uses the system time.
-_monotonic = time.monotonic
-_time = time.time
 
 _MAX_SWEEP_INTERVAL = 60
 """Maximum seconds between removing the expired blobs of SQLite storage."""
@@ -105,7 +100,8 @@ class MemoryStorage:
         self.ttl = ttl
         self._data: dict[str, MessageData] = {}
         self._size = 0
-        # Expiry time of each blob. Blobs are moved to the end when stored
+        # Expiry time of each blob, from a clock which is not changed by
+        # updates to the system time. Blobs are moved to the end when stored
         # so the dict is ordered by expiry time and expired blobs are at the
         # start.
         self._expires: dict[str, float] = {}
@@ -123,7 +119,7 @@ class MemoryStorage:
 
     def _remove_expired(self) -> None:
         # Only the expired blobs at the start of the dict are visited.
-        now = _monotonic()
+        now = monotonic()
         while self._expires:
             key, expires = next(iter(self._expires.items()))
             if expires > now:
@@ -132,7 +128,7 @@ class MemoryStorage:
 
     def _expired(self, key: str) -> bool:
         expires = self._expires.get(key)
-        if expires is not None and expires <= _monotonic():
+        if expires is not None and expires <= monotonic():
             self._remove(key)
             return True
         return False
@@ -194,7 +190,7 @@ class MemoryStorage:
         self._data[key] = blob
         self._size += len(blob)
         if self.ttl is not None:
-            self._expires[key] = _monotonic() + self.ttl
+            self._expires[key] = monotonic() + self.ttl
 
     async def close(self) -> None:
         """Clear all stored blobs."""
@@ -281,7 +277,7 @@ class SQLiteStorage:
                     await db.execute(
                         'UPDATE blobs SET expires_at = ? '
                         'WHERE expires_at IS NULL',
-                        (_time() + self.ttl,),
+                        (time() + self.ttl,),
                     )
                 await db.commit()
                 self._db = db
@@ -289,9 +285,10 @@ class SQLiteStorage:
 
     async def _remove_expired(self, db: aiosqlite.Connection) -> None:
         # Expired blobs are never returned, so they are only deleted
-        # occasionally rather than with every write.
+        # occasionally rather than with every write. Expiry times use the
+        # system time because they are kept in the database across restarts.
         assert self.ttl is not None
-        now = _time()
+        now = time()
         if now < self._next_sweep:
             return
         self._next_sweep = now + min(self.ttl, _MAX_SWEEP_INTERVAL)
@@ -320,7 +317,7 @@ class SQLiteStorage:
         async with db.execute(
             'SELECT count(*) FROM blobs WHERE key=? '
             'AND (expires_at IS NULL OR expires_at > ?)',
-            (key, _time()),
+            (key, time()),
         ) as cursor:
             result = await cursor.fetchone()
             # count() won't ever return 0 rows but mypy doesn't know this
@@ -341,7 +338,7 @@ class SQLiteStorage:
         async with db.execute(
             'SELECT value FROM blobs WHERE key=? '
             'AND (expires_at IS NULL OR expires_at > ?)',
-            (key, _time()),
+            (key, time()),
         ) as cursor:
             result = await cursor.fetchone()
             if result is None:
@@ -359,7 +356,7 @@ class SQLiteStorage:
         expires_at = None
         if self.ttl is not None:
             await self._remove_expired(db)
-            expires_at = _time() + self.ttl
+            expires_at = time() + self.ttl
         await db.execute(
             'INSERT OR REPLACE INTO blobs (key, value, expires_at) '
             'VALUES (?, ?, ?)',

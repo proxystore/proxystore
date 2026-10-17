@@ -171,7 +171,7 @@ async def test_memory_storage_max_size() -> None:
 
 async def test_memory_storage_ttl() -> None:
     clock = _Clock()
-    with mock.patch.object(storage_module, '_monotonic', clock):
+    with mock.patch.object(storage_module, 'monotonic', clock):
         storage = MemoryStorage(ttl=10)
         await storage.set('a', b'a')
         clock.now += 5
@@ -194,7 +194,7 @@ async def test_memory_storage_ttl() -> None:
 
 async def test_memory_storage_expired_blobs_free_space() -> None:
     clock = _Clock()
-    with mock.patch.object(storage_module, '_monotonic', clock):
+    with mock.patch.object(storage_module, 'monotonic', clock):
         storage = MemoryStorage(max_size=4, ttl=10)
         await storage.set('a', b'12')
         clock.now += 5
@@ -209,7 +209,7 @@ async def test_memory_storage_expired_blobs_free_space() -> None:
 
 async def test_sqlite_storage_ttl(tmp_path: pathlib.Path) -> None:
     clock = _Clock()
-    with mock.patch.object(storage_module, '_time', clock):
+    with mock.patch.object(storage_module, 'time', clock):
         storage = SQLiteStorage(tmp_path / 'blobs.db', ttl=10)
         await storage.set('a', b'a')
         clock.now += 5
@@ -236,7 +236,7 @@ async def test_sqlite_storage_removes_expired_blobs(
 ) -> None:
     path = tmp_path / 'blobs.db'
     clock = _Clock()
-    with mock.patch.object(storage_module, '_time', clock):
+    with mock.patch.object(storage_module, 'time', clock):
         storage = SQLiteStorage(path, ttl=10)
         await storage.set('a', b'a')
         clock.now += 10
@@ -252,7 +252,7 @@ async def test_sqlite_storage_removes_expired_blobs(
 async def test_sqlite_storage_ttl_changed(tmp_path: pathlib.Path) -> None:
     path = tmp_path / 'blobs.db'
     clock = _Clock()
-    with mock.patch.object(storage_module, '_time', clock):
+    with mock.patch.object(storage_module, 'time', clock):
         storage = SQLiteStorage(path)
         await storage.set('a', b'a')
         await storage.close()
@@ -284,7 +284,7 @@ async def test_sqlite_storage_adds_expiry_column(
         await db.commit()
 
     clock = _Clock()
-    with mock.patch.object(storage_module, '_time', clock):
+    with mock.patch.object(storage_module, 'time', clock):
         storage = SQLiteStorage(path, ttl=10)
         assert await storage.get('key') == b'\x00'
         clock.now += 10
