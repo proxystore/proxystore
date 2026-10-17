@@ -165,6 +165,80 @@ def test_multi_connector_iterator_tags() -> None:
         assert [key.connector_name for key in keys] == ['c1', 'c1']
 
 
+def test_multi_connector_batches_by_connector() -> None:
+    with multi_connector_from_policies(
+        Policy(max_size_bytes=1),
+        Policy(min_size_bytes=2),
+    ) as (multi_connector, connector1, connector2):
+        objs = [b'a', b'bb', b'c', b'dd', b'e']
+        with (
+            mock.patch.object(
+                connector1,
+                'put_batch',
+                wraps=connector1.put_batch,
+            ) as put1,
+            mock.patch.object(
+                connector2,
+                'put_batch',
+                wraps=connector2.put_batch,
+            ) as put2,
+        ):
+            keys = multi_connector.put_batch(objs)
+        put1.assert_called_once_with([b'a', b'c', b'e'])
+        put2.assert_called_once_with([b'bb', b'dd'])
+        assert [key.connector_name for key in keys] == [
+            'c1',
+            'c2',
+            'c1',
+            'c2',
+            'c1',
+        ]
+
+        missing = keys[1]._replace(
+            connector_key=connector2.new_key(),
+        )
+        with (
+            mock.patch.object(
+                connector1,
+                'get_batch',
+                wraps=connector1.get_batch,
+            ) as get1,
+            mock.patch.object(
+                connector2,
+                'get_batch',
+                wraps=connector2.get_batch,
+            ) as get2,
+        ):
+            results = multi_connector.get_batch([*keys, missing])
+        assert results == [*objs, None]
+        assert get1.call_count == 1
+        assert get2.call_count == 1
+
+
+def test_multi_connector_put_batch_no_valid_puts_nothing() -> None:
+    with multi_connector_from_policies(
+        Policy(max_size_bytes=1),
+        Policy(max_size_bytes=2),
+    ) as (multi_connector, connector1, connector2):
+        with (
+            mock.patch.object(connector1, 'put_batch') as put1,
+            mock.patch.object(connector2, 'put_batch') as put2,
+            pytest.raises(MultiConnectorError, match='policy'),
+        ):
+            multi_connector.put_batch([b'a', b'bb', b'ccc'])
+        put1.assert_not_called()
+        put2.assert_not_called()
+
+
+def test_multi_connector_get_batch_bad_key() -> None:
+    connector = MultiConnector({'connector': (LocalConnector(), Policy())})
+    key = connector.put(b'value')
+    bad_key = key._replace(connector_name='missing')
+    with pytest.raises(MultiConnectorError, match='does not exist'):
+        connector.get_batch([key, bad_key])
+    connector.close()
+
+
 def test_multi_connector_policy_no_valid() -> None:
     connectors: dict[str, tuple[Connector[Any], Policy]] = {
         'connector': (LocalConnector(), Policy(max_size_bytes=1)),

@@ -10,6 +10,7 @@ from collections.abc import Iterable
 from collections.abc import Sequence
 from types import TracebackType
 from typing import Any
+from typing import cast
 from typing import NamedTuple
 from typing import Self
 from typing import TypedDict
@@ -291,6 +292,24 @@ class MultiConnector:
             f'The connector which created {key} does not exist.',
         )
 
+    def _connector_name_for(
+        self,
+        obj: BytesLike,
+        subset_tags: set[str],
+        superset_tags: set[str],
+    ) -> str:
+        for connector_name in self.connectors_by_priority:
+            if self.connectors[connector_name].policy.is_valid(
+                size_bytes=len(obj),
+                subset_tags=subset_tags,
+                superset_tags=superset_tags,
+            ):
+                return connector_name
+        raise MultiConnectorError(
+            'No connector policy was suitable for the constraints: '
+            f'subset_tags={subset_tags}, superset_tags={superset_tags}.',
+        )
+
     def close(self, *, clear: bool | None = None) -> bool:
         """Close the connector and clean up.
 
@@ -403,7 +422,22 @@ class MultiConnector:
             List with same order as `keys` with the serialized objects or \
             `None` if the corresponding key does not have an associated object.
         """
-        return [self.get(key) for key in keys]
+        # Keys are grouped by connector so each connector gets its keys in
+        # one get_batch() call.
+        indices: dict[str, list[int]] = {}
+        for i, key in enumerate(keys):
+            self._connector_from_key(key)
+            indices.setdefault(key.connector_name, []).append(i)
+
+        objs: list[BytesLike | None] = [None] * len(keys)
+        for connector_name, group in indices.items():
+            connector = self.connectors[connector_name].connector
+            results = connector.get_batch(
+                [keys[i].connector_key for i in group],
+            )
+            for i, obj in zip(group, results, strict=True):
+                objs[i] = obj
+        return objs
 
     def put(
         self,
@@ -428,24 +462,13 @@ class MultiConnector:
         """
         # Tags are checked against each policy so iterators (which can only
         # be consumed once) must be converted.
-        subset_tags = set(subset_tags)
-        superset_tags = set(superset_tags)
-        for connector_name in self.connectors_by_priority:
-            connector, policy = self.connectors[connector_name]
-            if policy.is_valid(
-                size_bytes=len(obj),
-                subset_tags=subset_tags,
-                superset_tags=superset_tags,
-            ):
-                key = connector.put(obj)
-                return MultiKey(
-                    connector_name=connector_name,
-                    connector_key=key,
-                )
-        raise MultiConnectorError(
-            'No connector policy was suitable for the constraints: '
-            f'subset_tags={subset_tags}, superset_tags={superset_tags}.',
+        connector_name = self._connector_name_for(
+            obj,
+            set(subset_tags),
+            set(superset_tags),
         )
+        key = self.connectors[connector_name].connector.put(obj)
+        return MultiKey(connector_name=connector_name, connector_key=key)
 
     def put_batch(
         self,
@@ -455,11 +478,11 @@ class MultiConnector:
     ) -> list[MultiKey]:
         """Put a batch of serialized objects in the store.
 
-        Warning:
-            This method calls
-            [`put()`][proxystore.connectors.multi.MultiConnector.put]
-            individually for each item in the batch so items in the batch
-            can potentially be placed in different connectors.
+        Note:
+            Each object is placed in the connector its own size and the tags
+            match, so objects in the batch can be placed in different
+            connectors. The objects for each connector are put in one
+            `put_batch()` call to that connector.
 
         Args:
             objs: Sequence of serialized objects to put in the store.
@@ -475,11 +498,28 @@ class MultiConnector:
         Raises:
             MultiConnectorError: If no connector policy matches the arguments.
         """
-        # Tags are passed to each put() so iterators (which can only be
+        # Tags are checked for each object so iterators (which can only be
         # consumed once) must be converted.
         subset_tags = set(subset_tags)
         superset_tags = set(superset_tags)
-        return [
-            self.put(obj, subset_tags=subset_tags, superset_tags=superset_tags)
-            for obj in objs
-        ]
+        # A connector is chosen for every object before any are put so no
+        # objects are stored if one has no suitable connector.
+        indices: dict[str, list[int]] = {}
+        for i, obj in enumerate(objs):
+            connector_name = self._connector_name_for(
+                obj,
+                subset_tags,
+                superset_tags,
+            )
+            indices.setdefault(connector_name, []).append(i)
+
+        keys: list[MultiKey | None] = [None] * len(objs)
+        for connector_name, group in indices.items():
+            connector = self.connectors[connector_name].connector
+            connector_keys = connector.put_batch([objs[i] for i in group])
+            for i, key in zip(group, connector_keys, strict=True):
+                keys[i] = MultiKey(
+                    connector_name=connector_name,
+                    connector_key=key,
+                )
+        return cast(list[MultiKey], keys)
