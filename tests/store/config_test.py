@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import pathlib
 
+import pydantic
 import pytest
 
 from proxystore.connectors.file import FileConnector
@@ -92,6 +93,23 @@ def test_to_from_config() -> None:
 
     original.close()
     new.close()
+
+
+def test_store_config_made_once() -> None:
+    with Store(LocalConnector()) as store:
+        assert store.config() is store.config()
+
+
+def test_configs_are_immutable() -> None:
+    config = StoreConfig(connector=ConnectorConfig(kind='local'))
+    with pytest.raises(pydantic.ValidationError, match='frozen'):
+        config.name = 'new'  # type: ignore[misc]
+    with pytest.raises(pydantic.ValidationError, match='frozen'):
+        config.connector.kind = 'file'  # type: ignore[misc]
+
+    changed = config.model_copy(update={'name': 'new'})
+    assert changed.name == 'new'
+    assert config.name is None
 
 
 def test_store_config_from_toml(tmp_path: pathlib.Path) -> None:

@@ -245,6 +245,7 @@ class Store(Generic[ConnectorT]):
         self._deserializer = deserializer
         self._populate_target = populate_target
         self._owner = owner
+        self._config: StoreConfig | None = None
         _stores.add(self)
         registry.register(self)
 
@@ -406,9 +407,22 @@ class Store(Generic[ConnectorT]):
             >>> store = Store.from_config(config)
             ```
 
+        Note:
+            The configuration is made the first time this is called, and
+            later calls return the same (immutable) object, because a
+            proxy made by this store holds the configuration. Changes to the
+            connector made after the first call are not included.
+
         Returns:
             Store configuration.
         """
+        # Two threads may both make the configuration the first time, which
+        # is harmless because the configurations are equal.
+        if self._config is None:
+            self._config = self._make_config()
+        return self._config
+
+    def _make_config(self) -> StoreConfig:
         return StoreConfig(
             id=self.id,
             name=self.name,
