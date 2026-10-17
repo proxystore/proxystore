@@ -277,7 +277,10 @@ class Proxy(as_metaclass(ProxyMetaType), Generic[T]):  # type: ignore[misc]
                 try:
                     default_hash = hash(target)
                 except TypeError as e:
-                    default_hash = e
+                    # The traceback references this frame, and so this
+                    # proxy, so a proxy which copies the default (e.g., a
+                    # clone) would keep this proxy alive.
+                    default_hash = e.with_traceback(None)
 
         object.__setattr__(self, '__proxy_default_class__', default_class)
         object.__setattr__(self, '__proxy_default_hash__', default_hash)

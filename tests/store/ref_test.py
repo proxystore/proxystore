@@ -16,10 +16,13 @@ from unittest import mock
 import pytest
 
 from proxystore.connectors.file import FileConnector
+from proxystore.connectors.local import LocalConnector
 from proxystore.proxy import is_resolved
 from proxystore.proxy import Proxy
 from proxystore.store import ref
 from proxystore.store import Store
+from proxystore.store._evictions import evictions
+from proxystore.store.exceptions import ProxyResolveMissingKeyError
 from proxystore.store.exceptions import ProxyStoreFactoryError
 from proxystore.store.factory import StoreFactory
 from proxystore.store.ref import borrow
@@ -519,17 +522,72 @@ def test_del_invalid_owned_proxy(store: Store[FileConnector]) -> None:
     assert new_proxy == 'value'
 
 
-def test_clone_deepcopy(store: Store[FileConnector]) -> None:
+def test_clone_copies_stored_object(store: Store[FileConnector]) -> None:
     value = [1, 2, 3]
     factory = put_in_store(value, store)
-    proxy = OwnedProxy(factory, target=value)
+    proxy = OwnedProxy(factory, target=value, cache_defaults=True)
     assert is_resolved(proxy)
 
     cloned = clone(proxy)
-    assert is_resolved(cloned)
-    cloned.append(4)
-    assert cloned == [1, 2, 3, 4]
-    assert proxy == [1, 2, 3]
+    # The clone resolves its own copy from the store.
+    assert not is_resolved(cloned)
+    assert isinstance(cloned, list)
+    assert not is_resolved(cloned)
+    assert cloned.__proxy_factory__.key != factory.key
+
+    # A change to the local target which was not written to the store
+    # with update() is not in the clone.
+    proxy.append(4)
+    assert cloned == [1, 2, 3]
+    cloned.append(5)
+    assert proxy == [1, 2, 3, 4]
+
+    # The copy does not depend on the original object.
+    del proxy
+    gc.collect()
+    evictions.wait()
+    assert not store.exists(factory.key)
+    assert store.get(cloned.__proxy_factory__.key) == [1, 2, 3]
+
+
+def test_clone_missing_object(store: Store[FileConnector]) -> None:
+    factory = put_in_store('value', store)
+    proxy = OwnedProxy(factory)
+    store.evict(factory.key)
+
+    with pytest.raises(ProxyResolveMissingKeyError):
+        clone(proxy)
+
+
+def test_clone_mutably_borrowed(store: Store[FileConnector]) -> None:
+    factory = put_in_store([1, 2, 3], store)
+    proxy = OwnedProxy(factory)
+    borrowed = mut_borrow(proxy)
+
+    with pytest.raises(MutableBorrowError, match='mutable'):
+        clone(proxy)
+
+    del borrowed
+    assert clone(proxy) == [1, 2, 3]
+
+
+def test_clone_records_metrics() -> None:
+    with Store(LocalConnector(), metrics=True) as store:
+        proxy = store.owned_proxy('value')
+        cloned = clone(proxy)
+        new_key = cloned.__proxy_factory__.key
+
+        assert store.metrics is not None
+        source_metrics = store.metrics.get_metrics(proxy.__proxy_factory__.key)
+        assert source_metrics is not None
+        assert 'store.copy.get' in source_metrics.times
+        metrics = store.metrics.get_metrics(new_key)
+        assert metrics is not None
+        assert {'store.copy', 'store.copy.put'} <= set(metrics.times)
+        assert metrics.attributes['store.copy.object_size'] > 0
+        # Owned proxies evict their objects so they are deleted before the
+        # store is closed.
+        del proxy, cloned
 
 
 def test_owned_proxy_cache_defaults(store: Store[FileConnector]) -> None:
