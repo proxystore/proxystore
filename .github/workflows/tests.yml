@@ -39,7 +39,9 @@ jobs:
         run: pip install --upgrade setuptools pip tox
 
       - name: Run tox
-        run: tox -e py
+        # Print each test, a summary of tests which did not pass, and the
+        # slowest tests to help debug failing or slow runs.
+        run: tox -e py -- --verbose --report-chars=a --durations=20
 
       - name: Verify proxystore home directory not created
         run: |
