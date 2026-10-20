@@ -623,7 +623,9 @@ def update(proxy: OwnedProxy[T] | RefMutProxy[T]) -> None:
             as the new global value.
 
     Raises:
-        MutableBorrowError: if `proxy` has been mutably borrowed.
+        MutableBorrowError: if `proxy` is an
+            [`OwnedProxy`][proxystore.store.ref.OwnedProxy] which has been
+            borrowed, mutably or immutably.
         NotImplementedError: if the `connector` of the `store` used to create
             the proxy does not implement the
             [`DeferrableConnector`][proxystore.connectors.protocols.DeferrableConnector]

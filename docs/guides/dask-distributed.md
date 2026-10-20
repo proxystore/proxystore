@@ -64,7 +64,7 @@ ProxyStore provides a seamless alternative for passing objects to and from task 
 Here, we will modify the above example to use ProxyStore's [`FileConnector`][proxystore.connectors.file.FileConnector] to communicate intermediate data.
 This example will work the same for any [`Connector`][proxystore.connectors.protocols.Connector] implementations, but different implementations can yield different performance benefits depending on the data or Dask Distributed deployment characteristics.
 
-```python linenums="1" title="example.py" hl_lines="2 3 8 9 10 11 12 13 15"
+```python linenums="1" title="example.py" hl_lines="2 3 9 10 11 12 13 15 16"
 from dask.distributed import Client
 from proxystore.connectors.file import FileConnector
 from proxystore.store import Store

@@ -63,7 +63,7 @@ Code that is useful for building tests but is not a test itself belongs in the
 # Run all tests in tests/
 $ tox -e py311
 # Run a specific test
-$ tox -e py311 -- tests/factory_test.py::test_lambda_factory
+$ tox -e py311 -- tests/serialize_test.py::test_register_duplicate_identifiers
 ```
 
 Many of the tests are asyncio tests.

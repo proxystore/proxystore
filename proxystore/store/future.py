@@ -44,8 +44,10 @@ class ProxyFuture(Generic[T]):
         [`Store.future()`][proxystore.store.base.Store.future].
 
     Note:
-        If the result of the future is an exception, getting the result or
-        resolving the proxy of the future raises the exception. Use
+        If the result of the future is an exception, getting the result
+        raises the exception and resolving the proxy of the future raises a
+        [`ProxyResolveError`][proxystore.proxy.ProxyResolveError] caused by
+        the exception. Use
         [`set_exception()`][proxystore.store.future.ProxyFuture.set_exception]
         to make that clear, but
         [`set_result()`][proxystore.store.future.ProxyFuture.set_result]

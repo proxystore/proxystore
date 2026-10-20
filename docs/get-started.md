@@ -98,11 +98,11 @@ serialized object on disk, you will need boilerplate code that looks like:
 
 ```python linenums="1"
 def my_function(input: MyDataType | str | ...) -> None:
-    if is_filepath(input_data):
+    if is_filepath(input):
         data = read_and_deserialize(input)
-    elif is_redis_key(input_data):
+    elif is_redis_key(input):
         data = redis_client.get(input)
-    elif is_other_communication_method(input_data):
+    elif is_other_communication_method(input):
         ...
     elif isinstance(input, MyDataType):
         data = input

@@ -103,9 +103,14 @@ class Store(Generic[ConnectorT]):
         from proxystore.store import Store
         from proxystore.connectors.local import LocalConnector
 
+
+        def identity(obj: bytes) -> bytes:
+            return obj
+
+
         with Store(
             LocalConnector(),
-            serializer=lambda s: s,
+            serializer=identity,
             deserializer=pickle.loads,
         ) as store:
             data = [1, 2, 3]
@@ -114,7 +119,7 @@ class Store(Generic[ConnectorT]):
             data_proxy = store.proxy(data_bytes, populate_target=True)
 
             print(data_proxy)
-            # b'\x80\x04\x95\x0b\x00\x00\x00\x00\x00\x00\x00]\x94(K\x01K\x02K\x03e.'
+            # b'\x80\x05\x95\x0b\x00\x00\x00\x00\x00\x00\x00]\x94(K\x01K\x02K\x03e.'
         ```
 
         In this example, the serialized `data_bytes` was populated as the
