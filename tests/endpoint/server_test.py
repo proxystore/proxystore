@@ -7,6 +7,7 @@ import pathlib
 import socket
 import ssl
 from collections.abc import AsyncGenerator
+from random import randbytes
 from typing import Any
 from typing import NamedTuple
 from unittest import mock
@@ -43,7 +44,6 @@ from proxystore.endpoint.server import _ClientConnection
 from proxystore.endpoint.server import _format_address
 from proxystore.endpoint.server import ClientHandler
 from proxystore.endpoint.storage import MemoryStorage
-from testing.compat import randbytes
 from testing.endpoint import decode_meta
 from testing.endpoint import encode_meta
 from testing.utils import wait_until

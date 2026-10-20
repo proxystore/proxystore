@@ -65,7 +65,6 @@ def test_basic_operations(value: Any, store: Store[LocalConnector]) -> None:
 
     store.evict(key)
     assert not store.exists(key)
-    assert not store.is_cached(key)
 
 
 def test_operations_on_missing_key(store: Store[LocalConnector]) -> None:

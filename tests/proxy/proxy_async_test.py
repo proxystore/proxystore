@@ -24,9 +24,9 @@ async def test_awaitable() -> None:
 
 
 @pytest.mark.asyncio
-async def test_asyn_iterator() -> None:
+async def test_async_iterator() -> None:
     class TestAsyncIterator:
-        def __init__(self, value: list[int]) -> None:
+        def __init__(self, values: list[int]) -> None:
             self.iter = iter(values)
 
         def __aiter__(self) -> Self:

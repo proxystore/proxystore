@@ -264,7 +264,9 @@ def test_multi_connector_from_config() -> None:
         Policy(priority=2, superset_tags=['x', 'y']),
     ) as (multi_connector, _, _):
         config = multi_connector.config()
-        MultiConnector.from_config(config)
+        new_connector = MultiConnector.from_config(config)
+        assert new_connector.config() == config
+        new_connector.close(clear=False)
 
 
 def test_dormant_connectors() -> None:

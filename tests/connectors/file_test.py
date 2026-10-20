@@ -1,9 +1,9 @@
 from __future__ import annotations
 
+import contextlib
 import os
 import pathlib
 import stat
-import tempfile
 from unittest import mock
 
 import pytest
@@ -38,23 +38,16 @@ def test_multiple_closed_connectors(tmp_path: pathlib.Path) -> None:
 
 
 def test_paths_work_after_cwd_change(tmp_path: pathlib.Path) -> None:
-    current = os.getcwd()
+    new_working_dir = tmp_path / 'new-working-dir'
+    new_working_dir.mkdir()
 
-    with tempfile.TemporaryDirectory() as tmp_dir:
-        os.chdir(tmp_dir)
-
-        # relative to tmp_dir
-        store_dir = './store-dir'
-        new_working_dir = os.path.join(tmp_dir, 'new-working-dir')
-        os.makedirs(new_working_dir, exist_ok=True)
-
-        connector = FileConnector(store_dir=store_dir)
+    with contextlib.chdir(tmp_path):
+        # relative to tmp_path
+        connector = FileConnector(store_dir='./store-dir')
         key = connector.put(b'data')
-        os.chdir(new_working_dir)
-        assert connector.get(key) == b'data'
-        connector.close()
-
-    os.chdir(current)
+        with contextlib.chdir(new_working_dir):
+            assert connector.get(key) == b'data'
+            connector.close()
 
 
 def test_store_dir_path(tmp_path: pathlib.Path) -> None:

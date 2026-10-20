@@ -5,6 +5,7 @@ import logging
 import os
 import pathlib
 import threading
+from random import randbytes
 from typing import Any
 from unittest import mock
 
@@ -28,7 +29,6 @@ from proxystore.endpoint.exceptions import EndpointProtocolError
 from proxystore.endpoint.exceptions import EndpointTimeoutError
 from proxystore.endpoint.identity import EndpointId
 from proxystore.serialize import BytesLike
-from testing.compat import randbytes
 from testing.endpoint import copy_endpoint_dir
 from testing.endpoint import write_endpoint
 from testing.utils import wait_until

@@ -6,7 +6,7 @@ import subprocess
 import sys
 import textwrap
 import threading
-import time
+from collections.abc import Generator
 from datetime import datetime
 from datetime import timedelta
 from typing import Any
@@ -24,6 +24,14 @@ from proxystore.store.lifetimes import Lifetime
 from proxystore.store.lifetimes import register_lifetime_atexit
 from proxystore.store.lifetimes import StaticLifetime
 from proxystore.store.utils import get_key
+
+
+@pytest.fixture(autouse=True)
+def _reset_static_lifetime() -> Generator[None, None, None]:
+    # StaticLifetime is a singleton that cannot be used after it is closed,
+    # so each test gets a new instance even if the test fails.
+    yield
+    StaticLifetime._instance = None
 
 
 def test_context_lifetime_protocol(store: Store[LocalConnector]) -> None:
@@ -225,10 +233,8 @@ def test_lease_lifetime_does_not_block_exit(tmp_path: pathlib.Path) -> None:
         store.put('value', lifetime=lifetime)
         """,
     )
-    start = time.perf_counter()
-    subprocess.run([sys.executable, '-c', code], check=True, timeout=30)
     # The process should exit without waiting for the lease to expire.
-    assert time.perf_counter() - start < 30
+    subprocess.run([sys.executable, '-c', code], check=True, timeout=30)
     # The lease should have been closed at exit, evicting the object.
     assert list(store_dir.iterdir()) == []
 
@@ -306,17 +312,15 @@ def test_static_lifetime_cleanup(store: Store[LocalConnector]) -> None:
     assert not store.exists(key3)
     assert not store.exists(key4)
 
-    # Cleanup singleton instance
-    StaticLifetime._instance = None
-
 
 def test_static_lifetime_close_store(store: Store[LocalConnector]) -> None:
-    store.put('value', lifetime=StaticLifetime())
+    key = store.put('value', lifetime=StaticLifetime())
 
-    StaticLifetime().close(close_stores=True)
+    with mock.patch.object(store, 'close') as mock_close:
+        StaticLifetime().close(close_stores=True)
 
-    # Cleanup singleton instance
-    StaticLifetime._instance = None
+    mock_close.assert_called_once_with()
+    assert not store.exists(key)
 
 
 def test_context_lifetime_rejects_other_stores(

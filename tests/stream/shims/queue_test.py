@@ -40,8 +40,7 @@ def test_multiprocessing_implements_protocol() -> None:
 
 
 def test_threading_implements_protocol() -> None:
-    context = multiprocessing.get_context('spawn')
-    publisher, subscriber = create_pubsub_pair(context.Queue())
+    publisher, subscriber = create_pubsub_pair(queue.Queue())
 
     assert isinstance(publisher, MessagePublisher)
     assert isinstance(subscriber, MessageSubscriber)
@@ -78,7 +77,7 @@ def test_multiprocessing_send_messages() -> None:
     context = multiprocessing.get_context('spawn')
     publisher, subscriber = create_pubsub_pair(context.Queue())
 
-    messages = [b'message-{i}' for i in range(10)]
+    messages = [f'message-{i}'.encode() for i in range(10)]
 
     context = multiprocessing.get_context('spawn')
     pproc = context.Process(target=publish, args=[publisher, messages])
@@ -97,7 +96,7 @@ def test_multiprocessing_send_messages() -> None:
 def test_threading_send_messages() -> None:
     publisher, subscriber = create_pubsub_pair(queue.Queue())
 
-    messages = [b'message-{i}' for i in range(10)]
+    messages = [f'message-{i}'.encode() for i in range(10)]
 
     pthread = threading.Thread(target=publish, args=[publisher, messages])
     sthread = threading.Thread(target=subscribe, args=[subscriber, messages])

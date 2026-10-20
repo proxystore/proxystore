@@ -11,6 +11,7 @@ import threading
 import warnings
 from collections.abc import Generator
 from concurrent.futures import ThreadPoolExecutor
+from random import randbytes
 from unittest import mock
 
 import pytest
@@ -28,7 +29,6 @@ from proxystore.connectors.zmq import ZeroMQConnector
 from proxystore.connectors.zmq import ZeroMQKey
 from proxystore.connectors.zmq import ZeroMQServer
 from proxystore.connectors.zmq import ZeroMQServerError
-from testing.compat import randbytes
 from testing.utils import open_port
 
 ADDRESS = '127.0.0.1'

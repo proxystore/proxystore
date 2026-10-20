@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import threading
-import time
 from concurrent.futures import Future
 from typing import Any
 from unittest import mock
@@ -86,21 +85,26 @@ def test_polling_store_factory_backoff() -> None:
             store_config=store.config(),
             evict=True,
             polling=PollingPolicy(
-                interval=0.001,
+                interval=0.25,
                 backoff_factor=2,
-                interval_limit=0.004,
-                timeout=0.011,
+                interval_limit=1,
+                timeout=2.5,
             ),
         )
-        start = time.perf_counter()
-        with pytest.raises(ProxyResolveMissingKeyError):
+        with (
+            mock.patch('proxystore.store.factory.time.sleep') as mock_sleep,
+            pytest.raises(ProxyResolveMissingKeyError),
+        ):
             factory.resolve()
-        end = time.perf_counter()
 
-        # polling_timeout is 0.011 so we should sleep for 0.001, 0.002,
-        # 0.004, and 0.004 seconds then timeout
-        min_sleep = 0.011
-        assert (end - start) > min_sleep
+        # The interval doubles up to the limit until the total time slept
+        # reaches the timeout.
+        assert mock_sleep.call_args_list == [
+            mock.call(0.25),
+            mock.call(0.5),
+            mock.call(1),
+            mock.call(1),
+        ]
 
 
 def test_polling_store_factory_serialize() -> None:

@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from collections.abc import AsyncGenerator
+from random import randbytes
 from typing import Any
 from unittest import mock
 
@@ -19,7 +20,6 @@ from proxystore.endpoint.protocol import raise_for_status
 from proxystore.endpoint.protocol import Request
 from proxystore.endpoint.protocol import Status
 from proxystore.endpoint.storage import MemoryStorage
-from testing.compat import randbytes
 from testing.p2p import connect_peers
 from testing.p2p import local_peer_manager
 
