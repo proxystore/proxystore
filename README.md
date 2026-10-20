@@ -57,6 +57,36 @@ if __name__ == '__main__':
             assert pool.submit(total, proxy).result() == 100_000_000
 ```
 
+To proxy task results too, wrap the executor in a [`StoreExecutor`](https://docs.proxystore.dev/latest/api/store/executor/).
+It proxies the arguments and results you choose and evicts their data from the store once they are no longer needed.
+
+```python
+from concurrent.futures import ProcessPoolExecutor
+
+from proxystore.connectors.file import FileConnector
+from proxystore.store import Store
+from proxystore.store.executor import ProxyType
+from proxystore.store.executor import StoreExecutor
+
+
+def double(data: bytes) -> bytes:
+    return data + data
+
+
+if __name__ == '__main__':
+    store = Store(FileConnector('./proxystore-data'))
+
+    # Proxy every bytes argument and result. Closing the executor
+    # also closes the store.
+    with StoreExecutor(
+        ProcessPoolExecutor(),
+        store,
+        should_proxy=ProxyType(bytes),
+    ) as executor:
+        result = executor.submit(double, bytes(50_000_000)).result()
+        assert len(result) == 100_000_000
+```
+
 ### Across Sites with Endpoints
 
 HPC compute nodes and cloud VMs are often behind firewalls that block incoming connections, which makes moving data between sites hard.
@@ -74,6 +104,7 @@ proxystore-endpoint start my-endpoint
 
 Then, use the `EndpointConnector` in place of the `FileConnector`.
 Here, the task runs on the cluster via [Globus Compute](https://docs.proxystore.dev/latest/guides/globus-compute/), and the cluster's endpoint fetches the data directly from your laptop's endpoint.
+Endpoints limit the size of each object (100 MB by default), which you can change in the [endpoint configuration](https://docs.proxystore.dev/latest/guides/endpoints/#endpoint-cli).
 ```python
 from globus_compute_sdk import Executor
 
@@ -86,10 +117,10 @@ def total(data: bytes) -> int:
 
 
 with Store(EndpointConnector()) as store:
-    proxy = store.proxy(bytes(100_000_000))  # 100 MB
+    proxy = store.proxy(bytes(50_000_000))  # 50 MB
 
     with Executor(endpoint_id='<Globus Compute Endpoint UUID>') as gce:
-        assert gce.submit(total, proxy).result() == 100_000_000
+        assert gce.submit(total, proxy).result() == 50_000_000
 ```
 
 Check out the [Get Started](https://docs.proxystore.dev/latest/get-started) guide to learn more!
