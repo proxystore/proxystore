@@ -146,6 +146,7 @@ allow_untyped_defs = true
 [tool.pytest.ini_options]
 asyncio_mode = "auto"
 filterwarnings = [
+    "error::pytest.PytestUnhandledThreadExceptionWarning",
     "ignore::DeprecationWarning:proxystore.*",
     "ignore::DeprecationWarning:testing.*",
     "ignore::DeprecationWarning:tests.*",

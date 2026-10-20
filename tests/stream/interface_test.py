@@ -85,6 +85,8 @@ def test_stream_basics(
 
     pthread.join(timeout=5)
     cthread.join(timeout=5)
+    assert not pthread.is_alive()
+    assert not cthread.is_alive()
 
     producer.close(stores=True)
     consumer.close(stores=True)
