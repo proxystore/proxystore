@@ -4954,6 +4954,12 @@ removed. The other connectors in <code>proxystore-ex</code> were not ported.</p>
   <code>file_mode=0o600</code>), regardless of your umask. Pass
   <code>dir_mode=0o770, file_mode=0o660</code> to share objects with a group. An
   existing <code>store_dir</code> keeps its permissions.</li>
+<li><code>FileConnector</code> only removes <code>store_dir</code> when cleared if it created the
+  directory. A <code>store_dir</code> which already existed, and the objects in it, is
+  left as is and a warning is logged.</li>
+<li><a class="autorefs autorefs-internal" title="            close" href="../api/connectors/endpoint/#proxystore.connectors.endpoint.EndpointConnector.close"><code>EndpointConnector.close(clear=True)</code></a>
+  logs a warning because endpoints never remove objects when a connector is
+  closed.</li>
 <li><code>FileConnector</code> writes each object to a hidden temporary file and renames
   it, instead of writing a <code>.ready</code> marker file next to each object, so v2
   cannot read a directory written by v1.</li>

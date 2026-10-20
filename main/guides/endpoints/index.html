@@ -4635,6 +4635,18 @@ disappeared is detected even between requests.</p>
 <ol>
 <li>Use <code class="language-python highlight"><span class="kc">None</span></code> to disable the timeout.</li>
 </ol>
+<p>Endpoints are meant to be long-lived and own the objects stored on them, so
+closing the connector or its store never removes objects (a warning is
+logged if <code class="language-python highlight"><span class="n">clear</span><span class="o">=</span><span class="kc">True</span></code> is passed).
+By default, an endpoint keeps objects until it stops (<code>"memory"</code> backend) or
+forever (<code>"sqlite"</code> backend), so a long-running endpoint grows with every
+object stored.
+Remove objects once they are no longer needed by evicting them, such as with
+<code class="language-python highlight"><span class="n">store</span><span class="o">.</span><span class="n">proxy</span><span class="p">(</span><span class="n">obj</span><span class="p">,</span> <span class="n">evict</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span></code>, a
+<a href="../object-lifetimes/">lifetime</a>, or the
+<a class="autorefs autorefs-internal" title="            StoreExecutor" href="../../api/store/executor/#proxystore.store.executor.StoreExecutor"><code>StoreExecutor</code></a>.
+To bound the storage used, set <code>object_ttl</code> or <code>max_storage_size</code> in the
+<code>[storage]</code> section of the endpoint's <a href="#endpoint-cli">configuration</a>.</p>
 <h2 id="version-compatibility">Version Compatibility<a class="headerlink" href="#version-compatibility" title="Permanent link">&para;</a></h2>
 <p>Objects are serialized by one client and deserialized by another, possibly
 on a different system after being transferred between peer endpoints.
