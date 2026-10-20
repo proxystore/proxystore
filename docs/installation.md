@@ -1,5 +1,9 @@
 ## Base Install
 
+ProxyStore supports Linux and macOS with Python 3.11 or newer.
+Windows is not supported, but ProxyStore can be used on Windows with the
+[Windows Subsystem for Linux (WSL)](https://learn.microsoft.com/en-us/windows/wsl/){target=_blank}.
+
 We always recommend installing packages inside of your virtual environment of choice.
 E.g.,
 ```bash

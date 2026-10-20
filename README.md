@@ -131,6 +131,7 @@ Check out the [Get Started](https://docs.proxystore.dev/latest/get-started) guid
 ## Installation
 
 Install ProxyStore with [`pip`](https://pip.pypa.io/en/stable/).
+ProxyStore supports Linux and macOS (use [WSL](https://learn.microsoft.com/en-us/windows/wsl/) on Windows).
 ```bash
 pip install proxystore
 ```
