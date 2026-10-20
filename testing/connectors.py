@@ -117,8 +117,9 @@ def file_connector(
     tmp_path_factory: pytest.TempPathFactory,
 ) -> Generator[Connector[Any], None, None]:
     """FileConnector fixture."""
-    tmp_path = tmp_path_factory.mktemp('file-connector-fixture')
-    with file.FileConnector(tmp_path, buffering=0) as connector:
+    # A directory the connector creates so it is removed when closed.
+    store_dir = tmp_path_factory.mktemp('file-connector-fixture') / 'store'
+    with file.FileConnector(store_dir, buffering=0) as connector:
         yield connector
 
 

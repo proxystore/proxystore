@@ -52,8 +52,13 @@ def test_from_config_owner(owner: bool, tmp_path: pathlib.Path) -> None:
     with Store(FileConnector(tmp_path / 'store')) as store:
         new_store = Store.from_config(store.config(), owner=owner)
         assert new_store.owner == owner
-        new_store.close()
-        assert (tmp_path / 'store').exists() != owner
+        with mock.patch.object(new_store.connector, 'close') as mock_close:
+            new_store.close()
+        # The owner uses the connector's default, others never clear.
+        if owner:
+            mock_close.assert_called_once_with()
+        else:
+            mock_close.assert_called_once_with(clear=False)
 
 
 def test_from_config_with_id_not_owner(tmp_path: pathlib.Path) -> None:
@@ -69,8 +74,9 @@ def test_from_config_without_id_owner(tmp_path: pathlib.Path) -> None:
         config = store.config().model_copy(update={'id': None})
         new_store = Store.from_config(config)
         assert new_store.owner
-        new_store.close()
-        assert not (tmp_path / 'store').exists()
+        with mock.patch.object(new_store.connector, 'close') as mock_close:
+            new_store.close()
+        mock_close.assert_called_once_with()
 
 
 def test_get_or_create_store_not_owner(tmp_path: pathlib.Path) -> None:

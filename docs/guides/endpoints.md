@@ -390,6 +390,19 @@ connector = EndpointConnector(request_timeout=120)  # (1)!
 
 1. Use `#!python None` to disable the timeout.
 
+Endpoints are meant to be long-lived and own the objects stored on them, so
+closing the connector or its store never removes objects (a warning is
+logged if `#!python clear=True` is passed).
+By default, an endpoint keeps objects until it stops (`"memory"` backend) or
+forever (`"sqlite"` backend), so a long-running endpoint grows with every
+object stored.
+Remove objects once they are no longer needed by evicting them, such as with
+`#!python store.proxy(obj, evict=True)`, a
+[lifetime](object-lifetimes.md), or the
+[`StoreExecutor`][proxystore.store.executor.StoreExecutor].
+To bound the storage used, set `object_ttl` or `max_storage_size` in the
+`[storage]` section of the endpoint's [configuration](#endpoint-cli).
+
 ## Version Compatibility
 
 Objects are serialized by one client and deserialized by another, possibly

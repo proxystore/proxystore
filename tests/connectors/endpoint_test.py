@@ -217,11 +217,28 @@ def test_connection_pool_after_fork(endpoint_connector) -> None:
     connector.close()
 
 
-def test_close_never_clears(endpoint_connector) -> None:
+@pytest.mark.parametrize('clear', (None, False))
+def test_close_without_clear_does_not_warn(
+    clear: bool | None,
+    endpoint_connector,
+    caplog: pytest.LogCaptureFixture,
+) -> None:
+    caplog.set_level(logging.WARNING)
+    connector = EndpointConnector.from_config(endpoint_connector.config())
+    assert connector.close(clear=clear) is False
+    assert 'does not remove objects' not in caplog.text
+
+
+def test_close_never_clears(
+    endpoint_connector,
+    caplog: pytest.LogCaptureFixture,
+) -> None:
+    caplog.set_level(logging.WARNING)
     connector = EndpointConnector.from_config(endpoint_connector.config())
     key = connector.put(b'value')
     # Objects are owned by the endpoints so they are never removed.
     assert connector.close(clear=True) is False
+    assert 'does not remove objects' in caplog.text
     assert endpoint_connector.get(key) == b'value'
     endpoint_connector.evict(key)
 

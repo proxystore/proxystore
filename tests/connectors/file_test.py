@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import contextlib
+import logging
 import os
 import pathlib
 import stat
@@ -12,29 +13,57 @@ from proxystore.connectors.file import FileConnector
 
 
 def test_close_clears_by_default(tmp_path: pathlib.Path) -> None:
-    connector = FileConnector(store_dir=tmp_path)
+    store_dir = tmp_path / 'store'
+    connector = FileConnector(store_dir=store_dir)
 
-    assert os.path.exists(tmp_path)
+    assert os.path.exists(store_dir)
     assert connector.close() is True
-    assert not os.path.exists(tmp_path)
+    assert not os.path.exists(store_dir)
 
 
 def test_close_override_default(tmp_path: pathlib.Path) -> None:
-    connector = FileConnector(store_dir=tmp_path, clear=True)
+    store_dir = tmp_path / 'store'
+    connector = FileConnector(store_dir=store_dir, clear=True)
 
-    assert os.path.exists(tmp_path)
+    assert os.path.exists(store_dir)
     assert connector.close(clear=False) is False
-    assert os.path.exists(tmp_path)
+    assert os.path.exists(store_dir)
 
 
-def test_multiple_closed_connectors(tmp_path: pathlib.Path) -> None:
-    connector1 = FileConnector(store_dir=tmp_path)
-    connector2 = FileConnector(store_dir=tmp_path)
+def test_multiple_closed_connectors(
+    tmp_path: pathlib.Path,
+    caplog: pytest.LogCaptureFixture,
+) -> None:
+    caplog.set_level(logging.WARNING)
+    store_dir = tmp_path / 'store'
+    connector1 = FileConnector(store_dir=store_dir)
+    connector2 = FileConnector(store_dir=store_dir)
 
-    assert os.path.exists(tmp_path)
-    connector1.close(clear=True)
-    connector2.close(clear=True)
-    assert not os.path.exists(tmp_path)
+    assert os.path.exists(store_dir)
+    assert connector1.close(clear=True) is True
+    assert connector2.close(clear=True) is False
+    assert not os.path.exists(store_dir)
+    # Nothing is left to remove so the second close does not warn.
+    assert caplog.text == ''
+
+
+def test_close_keeps_existing_dir(
+    tmp_path: pathlib.Path,
+    caplog: pytest.LogCaptureFixture,
+) -> None:
+    caplog.set_level(logging.WARNING)
+    user_file = tmp_path / 'data.txt'
+    user_file.write_text('data')
+
+    connector = FileConnector(store_dir=tmp_path)
+    key = connector.put(b'value')
+    assert connector.close(clear=False) is False
+    assert caplog.text == ''
+
+    assert connector.close() is False
+    assert 'existed before the FileConnector was created' in caplog.text
+    assert user_file.read_text() == 'data'
+    assert (tmp_path / key.filename).exists()
 
 
 def test_paths_work_after_cwd_change(tmp_path: pathlib.Path) -> None:
@@ -158,6 +187,9 @@ def test_dir_created_by_another_process(tmp_path: pathlib.Path) -> None:
     # checked that it does not exist.
     with (
         mock.patch('os.path.exists', return_value=False),
-        FileConnector(store_dir),
+        FileConnector(store_dir) as connector,
     ):
         assert _mode(store_dir) == 0o755
+    # The other process created the directory so it is not removed.
+    assert connector.close() is False
+    assert os.path.isdir(store_dir)
