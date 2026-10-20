@@ -447,6 +447,9 @@ class _FakeTransport:
     def write(self, data: bytes) -> None:
         self.written += data
 
+    def get_write_buffer_size(self) -> int:
+        return len(self.written)
+
     def pause_reading(self) -> None:
         self.reading_paused = True
 
@@ -539,6 +542,21 @@ async def test_connection_eof_during_read() -> None:
     with pytest.raises(asyncio.IncompleteReadError) as exc_info:
         await task
     assert exc_info.value.partial == b'abcd'
+
+
+async def test_connection_is_idle() -> None:
+    conn, transport = await _fake_connection()
+    assert conn.is_idle()
+
+    conn.busy = True
+    assert not conn.is_idle()
+
+    # Data not yet sent would be lost if the connection was aborted.
+    conn.busy = False
+    conn.write(b'data')
+    assert not conn.is_idle()
+    transport.written.clear()
+    assert conn.is_idle()
 
 
 async def test_connection_write_after_close() -> None:
@@ -700,8 +718,8 @@ async def test_tls_close_with_idle_client(tls_server: _TLSServer) -> None:
         tls_server.fingerprint,
     )
     # The idle client never confirms the TLS shutdown, so the handler
-    # must abort the connection instead of waiting for it.
-    await asyncio.wait_for(tls_server.server.handler.close(timeout=0.1), 5)
+    # must abort the connection instead of waiting for the timeout.
+    await asyncio.wait_for(tls_server.server.handler.close(timeout=60), 5)
     await asyncio.to_thread(client.close)
 
 
