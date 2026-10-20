@@ -88,6 +88,129 @@ def test_endpoints_default_multiple_running(tmp_path: pathlib.Path) -> None:
         assert f'{config.name} ({config.id})' in message
 
 
+def test_endpoints_default_other_host(
+    endpoint: EndpointConfig,
+    endpoint_dir: EndpointDir,
+    tmp_path: pathlib.Path,
+) -> None:
+    # Simulate an endpoint started on another host which shares the
+    # ProxyStore home directory, such as the login node of a cluster.
+    copied_dir = copy_endpoint_dir(endpoint_dir, str(tmp_path))
+    info = copied_dir.read_connection()
+    copied_dir.write_connection(info.model_copy(update={'hostname': 'other'}))
+    assert copied_dir.status() == EndpointStatus.OTHER_HOST
+
+    with EndpointConnector(proxystore_dir=tmp_path) as connector:
+        assert connector.endpoint_id == endpoint.id
+        key = connector.put(b'value')
+        assert connector.get(key) == b'value'
+        connector.evict(key)
+
+
+def _mock_statuses(
+    statuses: dict[str, EndpointStatus],
+) -> mock._patch[mock.MagicMock]:
+    return mock.patch.object(
+        EndpointDir,
+        'status',
+        autospec=True,
+        side_effect=lambda endpoint_dir: statuses[endpoint_dir.name],
+    )
+
+
+def test_endpoints_default_running_preferred(tmp_path: pathlib.Path) -> None:
+    _, local = write_endpoint(str(tmp_path), 'local')
+    write_endpoint(str(tmp_path), 'remote')
+    statuses = {
+        'local': EndpointStatus.RUNNING,
+        'remote': EndpointStatus.OTHER_HOST,
+    }
+
+    with (
+        _mock_statuses(statuses),
+        mock.patch(
+            'proxystore.connectors.endpoint._connect',
+            return_value=mock.MagicMock(),
+        ) as mock_connect,
+    ):
+        connector = EndpointConnector(proxystore_dir=tmp_path)
+    assert connector.endpoint_id == local.id
+    # The endpoint started on another host is never tried.
+    mock_connect.assert_called_once()
+
+
+def test_endpoints_default_running_unreachable(
+    tmp_path: pathlib.Path,
+) -> None:
+    write_endpoint(str(tmp_path), 'local')
+
+    with (
+        _mock_statuses({'local': EndpointStatus.RUNNING}),
+        pytest.raises(EndpointConnectorError) as exc_info,
+    ):
+        EndpointConnector(proxystore_dir=tmp_path)
+    message = str(exc_info.value)
+    assert 'Failed to connect to the endpoint running' in message
+    assert 'local (' in message
+
+
+def test_endpoints_default_other_host_unreachable(
+    tmp_path: pathlib.Path,
+) -> None:
+    _, config = write_endpoint(str(tmp_path), 'remote')
+    write_endpoint(str(tmp_path), 'stopped')
+    statuses = {
+        'remote': EndpointStatus.OTHER_HOST,
+        'stopped': EndpointStatus.STOPPED,
+    }
+
+    with (
+        _mock_statuses(statuses),
+        pytest.raises(EndpointConnectorError) as exc_info,
+    ):
+        EndpointConnector(proxystore_dir=tmp_path)
+    message = str(exc_info.value)
+    assert 'Failed to find a running endpoint' in message
+    assert 'could not be reached' in message
+    assert f'remote ({config.id})' in message
+    assert 'stopped' not in message
+
+
+def test_endpoints_default_multiple_other_host(
+    tmp_path: pathlib.Path,
+) -> None:
+    configs = [write_endpoint(str(tmp_path), f'ep{i}')[1] for i in range(3)]
+    statuses = {
+        'ep0': EndpointStatus.OTHER_HOST,
+        'ep1': EndpointStatus.OTHER_HOST,
+        'ep2': EndpointStatus.OTHER_HOST,
+    }
+    # The third endpoint cannot be reached.
+    clients = {config.id: mock.MagicMock() for config in configs[:2]}
+
+    def _connect(endpoint_dir, endpoint_id, request_timeout):
+        if endpoint_id not in clients:
+            raise EndpointConnectionError('unreachable')
+        return clients[endpoint_id]
+
+    with (
+        _mock_statuses(statuses),
+        mock.patch(
+            'proxystore.connectors.endpoint._connect',
+            side_effect=_connect,
+        ),
+        pytest.raises(EndpointConnectorError) as exc_info,
+    ):
+        EndpointConnector(proxystore_dir=tmp_path)
+    message = str(exc_info.value)
+    assert 'multiple endpoints started on other hosts' in message
+    assert f'ep0 ({configs[0].id})' in message
+    assert f'ep1 ({configs[1].id})' in message
+    assert 'ep2' not in message
+    for client in clients.values():
+        client.close.assert_called_once()
+
+
 def test_endpoint_not_started(tmp_path: pathlib.Path) -> None:
     endpoint_id = EndpointId.random()
     config = EndpointConfig(name='test', id=endpoint_id, port=1)

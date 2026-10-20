@@ -88,7 +88,11 @@ class EndpointConnector:
             each endpoint. The list is part of the connector's
             configuration so a proxy resolved on another system will use
             whichever of these endpoints is on that system. If `None`, the
-            connector uses the only endpoint running in `proxystore_dir`.
+            connector uses the only endpoint running on this host in
+            `proxystore_dir`. If none are running on this host, it uses the
+            only endpoint that it can connect to of those started on other
+            hosts which share `proxystore_dir` (e.g., an endpoint on the
+            login node of a cluster, used from a compute node).
         proxystore_dir: Optionally specify the proxystore home
             directory. Defaults to
             [`home_dir()`][proxystore.utils.environment.home_dir].
@@ -107,7 +111,7 @@ class EndpointConnector:
             endpoint ID, or if `request_timeout` is not positive.
         EndpointConnectorError: If unable to connect to any of the endpoints
             provided, or if `endpoints` is `None` and there is not exactly
-            one endpoint running in `proxystore_dir`.
+            one endpoint to use in `proxystore_dir`.
     """
 
     def __init__(
@@ -135,45 +139,30 @@ class EndpointConnector:
             home_dir() if self.proxystore_dir is None else self.proxystore_dir
         )
         if self.endpoints is None:
-            candidates = _find_running(home)
+            found = _connect_default(home, request_timeout)
         else:
             candidates = [
                 (endpoint_dir, endpoint)
                 for endpoint_dir, endpoint in EndpointDir.find_all(home)
                 if endpoint.id in self.endpoints
             ]
-
-        # Use the first locally accessible endpoint as our home endpoint
-        failures: list[str] = []
-        found: tuple[EndpointId, EndpointDir, EndpointClient] | None = None
-        for endpoint_dir, endpoint in candidates:
-            endpoint_id = endpoint.id
-            logger.debug('Attempting connection to %s', endpoint_id)
-            try:
-                client = _connect(endpoint_dir, endpoint_id, request_timeout)
-            except EndpointError as e:
-                logger.debug('Connection to %s failed: %r', endpoint_id, e)
-                failures.append(f'{endpoint.name} ({endpoint_id}): {e}')
-                continue
-
-            logger.debug(
-                'Connection to %s successful, using as local endpoint',
-                endpoint_id,
+            # Use the first locally accessible endpoint as our home endpoint
+            connected, failures = _connect_all(
+                candidates,
+                request_timeout,
+                first=True,
             )
-            found = (endpoint_id, endpoint_dir, client)
-            break
-
-        if found is None:
-            if len(failures) == 0:
+            if len(connected) == 0:
+                if len(failures) == 0:
+                    raise EndpointConnectorError(
+                        'Failed to find an endpoint configuration in '
+                        f'{home} matching one of the provided endpoint IDs.',
+                    )
                 raise EndpointConnectorError(
-                    'Failed to find an endpoint configuration in '
-                    f'{home} matching one of the provided endpoint IDs.',
+                    'Failed to connect to any of the endpoints matching the '
+                    f'provided endpoint IDs:\n{_format_failures(failures)}',
                 )
-            reasons = '\n'.join(f'  - {failure}' for failure in failures)
-            raise EndpointConnectorError(
-                'Failed to connect to any of the endpoints matching the '
-                f'provided endpoint IDs:\n{reasons}',
-            )
+            found = connected[0]
         endpoint_id, endpoint_dir, client = found
         self.endpoint_id: EndpointId = endpoint_id
         self.endpoint_dir = endpoint_dir
@@ -412,8 +401,42 @@ class EndpointConnector:
         )
 
 
-def _find_running(home: str) -> list[tuple[EndpointDir, EndpointConfig]]:
+_Connected = tuple[EndpointId, EndpointDir, EndpointClient]
+
+
+def _connect_default(home: str, request_timeout: float | None) -> _Connected:
+    running, other_host = _find_by_status(home)
+    if len(running) > 1:
+        raise EndpointConnectorError(
+            f'Found multiple running endpoints in {home}: '
+            f'{_format_endpoints(running)}. Specify the endpoints to use.',
+        )
+    if len(running) == 1:
+        connected, failures = _connect_all(running, request_timeout)
+        if len(connected) == 0:
+            raise EndpointConnectorError(
+                'Failed to connect to the endpoint running in '
+                f'{home}:\n{_format_failures(failures)}',
+            )
+        return connected[0]
+    if len(other_host) == 0:
+        raise EndpointConnectorError(
+            f'Failed to find a running endpoint in {home}. Start an '
+            'endpoint or specify the endpoints to use.',
+        )
+    return _connect_other_host(home, other_host, request_timeout)
+
+
+def _find_by_status(
+    home: str,
+) -> tuple[
+    list[tuple[EndpointDir, EndpointConfig]],
+    list[tuple[EndpointDir, EndpointConfig]],
+]:
+    # Find the endpoints running on this host and those started on other
+    # hosts which share the home directory.
     running: list[tuple[EndpointDir, EndpointConfig]] = []
+    other_host: list[tuple[EndpointDir, EndpointConfig]] = []
     for endpoint_dir, endpoint in EndpointDir.find_all(home):
         try:
             status = endpoint_dir.status()
@@ -422,21 +445,75 @@ def _find_running(home: str) -> list[tuple[EndpointDir, EndpointConfig]]:
             continue
         if status == EndpointStatus.RUNNING:
             running.append((endpoint_dir, endpoint))
+        elif status == EndpointStatus.OTHER_HOST:
+            other_host.append((endpoint_dir, endpoint))
+    return running, other_host
 
-    if len(running) == 0:
-        raise EndpointConnectorError(
-            f'Failed to find a running endpoint in {home}. Start an '
-            'endpoint or specify the endpoints to use.',
-        )
-    if len(running) > 1:
+
+def _connect_other_host(
+    home: str,
+    candidates: list[tuple[EndpointDir, EndpointConfig]],
+    request_timeout: float | None,
+) -> _Connected:
+    # No endpoint is running on this host, so use an endpoint started on
+    # another host which shares the home directory, if it can be reached.
+    # Whether those endpoints are still running is only known by connecting.
+    connected, failures = _connect_all(candidates, request_timeout)
+    if len(connected) > 1:
+        for _, _, client in connected:
+            client.close()
         names = ', '.join(
-            f'{endpoint.name} ({endpoint.id})' for _, endpoint in running
+            f'{endpoint_dir.name} ({endpoint_id})'
+            for endpoint_id, endpoint_dir, _ in connected
         )
         raise EndpointConnectorError(
-            f'Found multiple running endpoints in {home}: {names}. Specify '
-            'the endpoints to use.',
+            f'Found multiple endpoints started on other hosts in {home}: '
+            f'{names}. Specify the endpoints to use.',
         )
-    return running
+    if len(connected) == 0:
+        raise EndpointConnectorError(
+            f'Failed to find a running endpoint in {home}. Endpoints '
+            'started on other hosts could not be reached:\n'
+            f'{_format_failures(failures)}',
+        )
+    return connected[0]
+
+
+def _connect_all(
+    candidates: list[tuple[EndpointDir, EndpointConfig]],
+    request_timeout: float | None,
+    *,
+    first: bool = False,
+) -> tuple[list[_Connected], list[str]]:
+    # Connect to each candidate, or only until one connects if first is set.
+    connected: list[_Connected] = []
+    failures: list[str] = []
+    for endpoint_dir, endpoint in candidates:
+        endpoint_id = endpoint.id
+        logger.debug('Attempting connection to %s', endpoint_id)
+        try:
+            client = _connect(endpoint_dir, endpoint_id, request_timeout)
+        except EndpointError as e:
+            logger.debug('Connection to %s failed: %r', endpoint_id, e)
+            failures.append(f'{endpoint.name} ({endpoint_id}): {e}')
+            continue
+        logger.debug('Connection to %s successful', endpoint_id)
+        connected.append((endpoint_id, endpoint_dir, client))
+        if first:
+            break
+    return connected, failures
+
+
+def _format_endpoints(
+    endpoints: list[tuple[EndpointDir, EndpointConfig]],
+) -> str:
+    return ', '.join(
+        f'{endpoint.name} ({endpoint.id})' for _, endpoint in endpoints
+    )
+
+
+def _format_failures(failures: list[str]) -> str:
+    return '\n'.join(f'  - {failure}' for failure in failures)
 
 
 def _connect(
