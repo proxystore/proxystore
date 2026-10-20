@@ -107,3 +107,5 @@ def test_threading_send_messages() -> None:
 
     pthread.join(timeout=5)
     sthread.join(timeout=5)
+    assert not pthread.is_alive()
+    assert not sthread.is_alive()
