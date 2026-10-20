@@ -104,6 +104,7 @@ proxystore-endpoint start my-endpoint
 
 Then, use the `EndpointConnector` in place of the `FileConnector`.
 Here, the task runs on the cluster via [Globus Compute](https://docs.proxystore.dev/latest/guides/globus-compute/), and the cluster's endpoint fetches the data directly from your laptop's endpoint.
+The connector takes the IDs of both endpoints, and the proxy uses whichever one is on the system where it is resolved.
 Endpoints limit the size of each object (100 MB by default), which you can change in the [endpoint configuration](https://docs.proxystore.dev/latest/guides/endpoints/#endpoint-cli).
 ```python
 from globus_compute_sdk import Executor
@@ -116,7 +117,11 @@ def total(data: bytes) -> int:
     return len(data)
 
 
-with Store(EndpointConnector()) as store:
+connector = EndpointConnector(
+    ['<Laptop Endpoint ID>', '<Cluster Endpoint ID>']
+)
+
+with Store(connector) as store:
     proxy = store.proxy(bytes(50_000_000))  # 50 MB
 
     with Executor(endpoint_id='<Globus Compute Endpoint UUID>') as gce:
