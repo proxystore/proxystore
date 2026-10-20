@@ -74,6 +74,21 @@ def test_connector_config(connectors: Connector[Any]) -> None:
 
     assert isinstance(new_connector, Connector)
     assert type(connector) is type(new_connector)
+    assert new_connector.config() == config
+
+    # These connectors keep objects in the memory of the instance (including
+    # the mocked DAOS), so the new connector cannot get them.
+    if type(connector).__name__ not in {
+        'DAOSConnector',
+        'LocalConnector',
+        'MultiConnector',
+    }:
+        key = connector.put(b'value')
+        assert new_connector.get(key) == b'value'
+        connector.evict(key)
+
+    # Do not clear because the objects are shared with the fixture.
+    new_connector.close(clear=False)
 
 
 def test_connector_store_config(connectors: Connector[Any]) -> None:

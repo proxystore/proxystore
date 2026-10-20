@@ -47,13 +47,13 @@ import sys
 import types
 import typing
 import weakref
+from random import randbytes
 from typing import Any
 
 import pytest
 
 from proxystore.proxy import Proxy
 from proxystore.proxy import ProxyResolveError
-from testing.compat import randbytes
 from testing.factories import SimpleFactory
 
 OBJECTS_CODE = """

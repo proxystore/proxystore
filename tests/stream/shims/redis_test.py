@@ -72,10 +72,3 @@ def test_basic_queue_empty() -> None:
 
     with pytest.raises(TimeoutError):
         next(subscriber)
-
-
-def test_basic_queue_timeout() -> None:
-    subscriber = RedisQueueSubscriber('localhost', 0, 'default', timeout=1)
-
-    with pytest.raises(TimeoutError):
-        next(subscriber)
