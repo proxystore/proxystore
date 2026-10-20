@@ -38,13 +38,14 @@ class FileConnector:
     written.
 
     Args:
-        store_dir: Path to directory to store data in. This directory is
-            removed when the connector is closed with `clear=True` (the
-            default), such as by the
-            [`owner`][proxystore.store.base.Store.owner] store.
+        store_dir: Path to directory to store data in. If the connector
+            creates this directory, it is removed when the connector is
+            closed with `clear=True` (the default), such as by the
+            [`owner`][proxystore.store.base.Store.owner] store. A directory
+            which already existed is never removed.
         clear: Clear all objects on
             [`close()`][proxystore.connectors.file.FileConnector.close] by
-            removing `store_dir`.
+            removing `store_dir` if the connector created it.
         buffering: Buffering policy used with [`open()`][open].
         dir_mode: Permissions of `store_dir` if the connector creates it.
             The default only gives the current user access. An existing
@@ -74,6 +75,9 @@ class FileConnector:
         self.buffering = buffering
         self.dir_mode = dir_mode
         self.file_mode = file_mode
+        # Only a directory this connector created is removed when cleared,
+        # so the files of a directory which already existed are never lost.
+        self._created_dir = False
 
         if not os.path.exists(self.store_dir):
             os.makedirs(os.path.dirname(self.store_dir), exist_ok=True)
@@ -84,6 +88,7 @@ class FileConnector:
                 pass
             else:
                 os.chmod(self.store_dir, self.dir_mode)
+                self._created_dir = True
 
     def __enter__(self) -> Self:
         return self
@@ -103,7 +108,9 @@ class FileConnector:
         """Close the connector and clean up.
 
         Warning:
-            This will delete the `store_dir` directory by default.
+            This will delete the `store_dir` directory by default if the
+            connector created it. A `store_dir` which already existed is
+            left as is, including its objects, and a warning is logged.
 
         Note:
             A [`Store`][proxystore.store.base.Store] only clears its
@@ -118,7 +125,8 @@ class FileConnector:
             proxies have been resolved.
 
         Args:
-            clear: Remove the store directory. Overrides the default
+            clear: Remove the store directory if the connector created
+                it. Overrides the default
                 value of `clear` provided when the
                 [`FileConnector`][proxystore.connectors.file.FileConnector]
                 was instantiated.
@@ -127,9 +135,19 @@ class FileConnector:
             If the store directory was removed.
         """
         clear = self.clear if clear is None else clear
-        if clear and os.path.isdir(self.store_dir):
-            shutil.rmtree(self.store_dir, ignore_errors=True)
-        return clear
+        if not clear:
+            return False
+        if not self._created_dir:
+            if os.path.isdir(self.store_dir):
+                logger.warning(
+                    'Not removing %s because it existed before the '
+                    'FileConnector was created. Use a new directory or '
+                    'close with clear=False.',
+                    self.store_dir,
+                )
+            return False
+        shutil.rmtree(self.store_dir, ignore_errors=True)
+        return True
 
     def config(self) -> dict[str, Any]:
         """Get the connector configuration.

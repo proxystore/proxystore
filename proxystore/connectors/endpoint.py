@@ -204,12 +204,25 @@ class EndpointConnector:
     def close(self, *, clear: bool | None = None) -> bool:
         """Close the connector and clean up.
 
+        Endpoints are long-lived and own their objects, so closing the
+        connector never removes objects, and a warning is logged if
+        `clear=True` is passed. To remove objects, evict them (e.g., with
+        `#!python store.proxy(obj, evict=True)` or a
+        [lifetime](../../guides/object-lifetimes.md)), or configure the
+        endpoint's `object_ttl` or `max_storage_size`.
+
         Args:
             clear: Ignored because objects are owned by the endpoints.
 
         Returns:
             `False` because objects are never removed.
         """
+        if clear:
+            logger.warning(
+                'EndpointConnector.close(clear=True) does not remove objects '
+                'because they are owned by the endpoints. Evict objects or '
+                'configure the object_ttl of the endpoint instead.',
+            )
         self._pool.close()
         return False
 

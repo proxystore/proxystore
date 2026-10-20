@@ -289,6 +289,12 @@ removed. The other connectors in `proxystore-ex` were not ported.
   `file_mode=0o600`), regardless of your umask. Pass
   `dir_mode=0o770, file_mode=0o660` to share objects with a group. An
   existing `store_dir` keeps its permissions.
+* `FileConnector` only removes `store_dir` when cleared if it created the
+  directory. A `store_dir` which already existed, and the objects in it, is
+  left as is and a warning is logged.
+* [`EndpointConnector.close(clear=True)`][proxystore.connectors.endpoint.EndpointConnector.close]
+  logs a warning because endpoints never remove objects when a connector is
+  closed.
 * `FileConnector` writes each object to a hidden temporary file and renames
   it, instead of writing a `.ready` marker file next to each object, so v2
   cannot read a directory written by v1.
