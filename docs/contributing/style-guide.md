@@ -11,12 +11,14 @@ compliance.
   in one place. Attributes that are defined later can be set as `None`
   as a placeholder.
 * Prefer f-strings (`#!python f'name: {name}`) over string format
-  (`#!python 'name: {}'.format(name)`). Never use the `%` operator.
+  (`#!python 'name: {}'.format(name)`) and the `%` operator. Logging calls
+  are the exception: pass `%`-style arguments to the logger so messages
+  are only formatted when they are emitted.
 * Prefer [typing.NamedTuple][] over [collections.namedtuple][].
 * Exception messages should read as complete sentences with punctuation.
   Logging messages can forgo trailing punctuation.
   ```python
   raise ValueError('Name must contain alphanumeric characters only.')
-  logger.info(f'New connection opened to {address}')
+  logger.info('New connection opened to %s', address)
   ```
 * Document all exceptions that may be raised by a function in the docstring.

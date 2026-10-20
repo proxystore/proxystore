@@ -174,7 +174,8 @@ with Store(
 
 !!! tip
 
-    In some cases, data may already be serialized in which case an identity function can be passed as the serializer (e.g., `#!python lambda x: x`).
+    In some cases, data may already be serialized in which case an identity function can be passed as the serializer.
+    Use an importable function rather than a `#!python lambda` so the store's config can be pickled with its proxies.
     However, `populate_target=False` should also be set in this case to avoid prepopulating the proxy with the serialized target object.
     See the [`Store`][proxystore.store.base.Store] docstring for more information.
 

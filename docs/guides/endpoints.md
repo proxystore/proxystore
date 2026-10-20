@@ -140,9 +140,11 @@ object_ttl = 86400  # (14)!
     do not expire. Proxies of an expired object fail to resolve, so choose
     a time longer than objects are needed. With the `"memory"` backend,
     `max_storage_size` (e.g., `"8 GiB"`, defaults to `0` for no limit) limits
-    the total size of the stored objects. Storing an object which does not
-    fit fails with a
-    [`StorageFullError`][proxystore.endpoint.exceptions.StorageFullError],
+    the total size of the stored objects. The endpoint rejects an object
+    which does not fit with a
+    [`StorageFullError`][proxystore.endpoint.exceptions.StorageFullError]
+    (reported to connector users as an
+    [`EndpointConnectorError`][proxystore.connectors.endpoint.EndpointConnectorError]),
     and stored objects are never removed to make room. It must be at least
     `max_object_size`.
 
@@ -366,9 +368,8 @@ The list only selects the home endpoint and is not an allowlist: requests for
 objects stored on endpoints which are not in the list are still forwarded to
 those peers.
 
-A request to the home endpoint fails with an
-[`EndpointTimeoutError`][proxystore.endpoint.exceptions.EndpointTimeoutError]
-if no data is sent or received for `request_timeout` seconds (60 by default),
+A request to the home endpoint fails if no data is sent or received for
+`request_timeout` seconds (60 by default),
 so a stuck endpoint does not hang the client. Large objects do not time out
 while the data keeps moving, but the timeout includes the time the endpoint
 spends handling a request (e.g., writing a large object to its storage).
@@ -376,8 +377,10 @@ Requests for objects on peers are not timed out by the connector because the
 home endpoint only responds once the peer does. Instead, the home endpoint
 abandons a request to a peer which sends or receives no data for the
 `request_timeout` in the `[p2p]` section of its configuration (60 seconds by
-default), and the request fails with a
-[`PeerUnavailableError`][proxystore.endpoint.exceptions.PeerUnavailableError].
+default), and the request fails.
+A failed request, including one which timed out, raises an
+[`EndpointConnectorError`][proxystore.connectors.endpoint.EndpointConnectorError]
+from the connector.
 The connector also enables TCP keepalive so a home endpoint whose host
 disappeared is detected even between requests.
 

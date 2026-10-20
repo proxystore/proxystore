@@ -353,9 +353,8 @@ class StoreExecutor(Executor):
         executor: Executor to use for scheduling callables. This class
             takes ownership of `executor`, meaning that, when closed, it will
             also close `executor`.
-        store: Store to use for proxying arguments and results. This class
-            takes ownership of `store`, meaning that, when closed, it will
-            also close `store`.
+        store: Store to use for proxying arguments and results. When
+            `close_store` is `True`, closing this class also closes `store`.
         should_proxy: Callable used to determine which arguments and results
             should be proxied. This is only applied to positional arguments,
             keyword arguments, and return values. Container types will not

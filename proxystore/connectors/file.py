@@ -38,8 +38,10 @@ class FileConnector:
     written.
 
     Args:
-        store_dir: Path to directory to store data in. Note this
-            directory will be deleted upon closing the store.
+        store_dir: Path to directory to store data in. This directory is
+            removed when the connector is closed with `clear=True` (the
+            default), such as by the
+            [`owner`][proxystore.store.base.Store.owner] store.
         clear: Clear all objects on
             [`close()`][proxystore.connectors.file.FileConnector.close] by
             removing `store_dir`.

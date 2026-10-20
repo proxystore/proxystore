@@ -59,7 +59,7 @@ serialized with the proxy.
 Proxies are powerful because they can intercept and redefine functionality of
 an object while emulating the rest of the objects behavior.
 
-```python linenums="1" hl_lines="15 16 18 19 20 21"
+```python linenums="1" hl_lines="15 17 18 20 21 22 23"
 import numpy as np
 from proxystore.proxy import Proxy
 
