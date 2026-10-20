@@ -100,6 +100,9 @@ class _ClientConnection(asyncio.BufferedProtocol):
         self._writing_paused = False
         self._drain_waiter: asyncio.Future[None] | None = None
 
+        # Set by the handler while a request is being read or handled.
+        self.busy = False
+
     def connection_made(self, transport: asyncio.BaseTransport) -> None:
         """Start the callback task for the new connection."""
         # uvloop transports do not subclass asyncio.Transport but implement
@@ -166,6 +169,11 @@ class _ClientConnection(asyncio.BufferedProtocol):
         self._writing_paused = False
         if self._drain_waiter is not None and not self._drain_waiter.done():
             self._drain_waiter.set_result(None)
+
+    def is_idle(self) -> bool:
+        """Check if no request is in progress and all data has been sent."""
+        assert self._transport is not None
+        return not self.busy and self._transport.get_write_buffer_size() == 0
 
     def get_extra_info(self, name: str) -> Any:
         """Get information about the transport."""
@@ -357,12 +365,11 @@ class ClientHandler:
     async def close(self, timeout: float = 1) -> None:
         """Stop accepting connections and close all client connections.
 
-        Connection handlers waiting on the client finish once their
-        connection is closed. Handlers that do not finish within `timeout`
-        seconds (e.g., because a request is waiting on a peer endpoint) are
-        cancelled, and connections still open are aborted (e.g., TLS
-        connections to idle clients). This is idempotent so it is safe to
-        call multiple times.
+        Idle connections are aborted. Other connections are closed so
+        that data being sent is flushed. Handlers that do not finish within
+        `timeout` seconds (e.g., because a request is waiting on a peer
+        endpoint) are cancelled, and connections still open are aborted.
+        This is idempotent so it is safe to call multiple times.
 
         Args:
             timeout: Seconds to wait for connection handlers to finish
@@ -378,13 +385,17 @@ class ClientHandler:
     async def _close_connections(self, timeout: float) -> None:
         connections = list(self._connections)
         for conn in connections:
-            conn.close()
+            # Closing a TLS connection waits for the client to confirm the
+            # shutdown, but an idle client may never read from its socket.
+            # Aborting is safe because no data would be lost.
+            if conn.is_idle():
+                conn.abort()
+            else:
+                conn.close()
         tasks = list(self._tasks)
         if len(tasks) == 0:
             return
         _, pending = await asyncio.wait(tasks, timeout=timeout)
-        # A TLS connection waits for the client to confirm the shutdown,
-        # but an idle client may never read from its socket.
         for conn in connections:
             conn.abort()
         for task in pending:
@@ -527,6 +538,7 @@ class ClientHandler:
             except asyncio.IncompleteReadError:
                 # Client closed the connection between requests.
                 return
+            conn.busy = True
             try:
                 reader.feed(header_bytes)
                 await _read_message(conn, reader)
@@ -546,6 +558,7 @@ class ClientHandler:
                 conn,
                 dataclasses.replace(response, request_id=request.request_id),
             )
+            conn.busy = False
 
 
 def _format_address(peername: Any) -> str:
