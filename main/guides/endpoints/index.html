@@ -4383,9 +4383,11 @@ is stored separately in the <code>secret.key</code> file which only the owner ca
     do not expire. Proxies of an expired object fail to resolve, so choose
     a time longer than objects are needed. With the <code>"memory"</code> backend,
     <code>max_storage_size</code> (e.g., <code>"8 GiB"</code>, defaults to <code>0</code> for no limit) limits
-    the total size of the stored objects. Storing an object which does not
-    fit fails with a
-    <a class="autorefs autorefs-internal" title="            StorageFullError" href="../../api/endpoint/exceptions/#proxystore.endpoint.exceptions.StorageFullError"><code>StorageFullError</code></a>,
+    the total size of the stored objects. The endpoint rejects an object
+    which does not fit with a
+    <a class="autorefs autorefs-internal" title="            StorageFullError" href="../../api/endpoint/exceptions/#proxystore.endpoint.exceptions.StorageFullError"><code>StorageFullError</code></a>
+    (reported to connector users as an
+    <a class="autorefs autorefs-internal" title="            EndpointConnectorError" href="../../api/connectors/endpoint/#proxystore.connectors.endpoint.EndpointConnectorError"><code>EndpointConnectorError</code></a>),
     and stored objects are never removed to make room. It must be at least
     <code>max_object_size</code>.</li>
 </ol>
@@ -4585,9 +4587,8 @@ to use on each system where proxies created by the store will be resolved.
 The list only selects the home endpoint and is not an allowlist: requests for
 objects stored on endpoints which are not in the list are still forwarded to
 those peers.</p>
-<p>A request to the home endpoint fails with an
-<a class="autorefs autorefs-internal" title="            EndpointTimeoutError" href="../../api/endpoint/exceptions/#proxystore.endpoint.exceptions.EndpointTimeoutError"><code>EndpointTimeoutError</code></a>
-if no data is sent or received for <code>request_timeout</code> seconds (60 by default),
+<p>A request to the home endpoint fails if no data is sent or received for
+<code>request_timeout</code> seconds (60 by default),
 so a stuck endpoint does not hang the client. Large objects do not time out
 while the data keeps moving, but the timeout includes the time the endpoint
 spends handling a request (e.g., writing a large object to its storage).
@@ -4595,8 +4596,10 @@ Requests for objects on peers are not timed out by the connector because the
 home endpoint only responds once the peer does. Instead, the home endpoint
 abandons a request to a peer which sends or receives no data for the
 <code>request_timeout</code> in the <code>[p2p]</code> section of its configuration (60 seconds by
-default), and the request fails with a
-<a class="autorefs autorefs-internal" title="            PeerUnavailableError" href="../../api/endpoint/exceptions/#proxystore.endpoint.exceptions.PeerUnavailableError"><code>PeerUnavailableError</code></a>.
+default), and the request fails.
+A failed request, including one which timed out, raises an
+<a class="autorefs autorefs-internal" title="            EndpointConnectorError" href="../../api/connectors/endpoint/#proxystore.connectors.endpoint.EndpointConnectorError"><code>EndpointConnectorError</code></a>
+from the connector.
 The connector also enables TCP keepalive so a home endpoint whose host
 disappeared is detected even between requests.</p>
 <div class="language-python highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-9-1">1</a></span></pre></div></td><td class="code"><div><pre><span></span><code><span id="__span-9-1"><a id="__codelineno-9-1" name="__codelineno-9-1"></a><span class="n">connector</span> <span class="o">=</span> <span class="n">EndpointConnector</span><span class="p">(</span><span class="n">request_timeout</span><span class="o">=</span><span class="mi">120</span><span class="p">)</span>  <span class="c1"># (1)!</span>

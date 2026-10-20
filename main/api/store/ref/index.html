@@ -5704,7 +5704,9 @@ as the new global value.</p>
               <code><a class="autorefs autorefs-internal" title="            MutableBorrowError (proxystore.store.ref.MutableBorrowError)" href="#proxystore.store.ref.MutableBorrowError">MutableBorrowError</a></code>
             –
           <div class="doc-md-description">
-            <p>if <code>proxy</code> has been mutably borrowed.</p>
+            <p>if <code>proxy</code> is an
+<a class="autorefs autorefs-internal" title="            OwnedProxy" href="#proxystore.store.ref.OwnedProxy"><code>OwnedProxy</code></a> which has been
+borrowed, mutably or immutably.</p>
           </div>
         </li>
         <li class="doc-section-item field-body">
@@ -5774,7 +5776,9 @@ protocol.</p>
 <span class="normal"><a href="#__codelineno-0-651">651</a></span>
 <span class="normal"><a href="#__codelineno-0-652">652</a></span>
 <span class="normal"><a href="#__codelineno-0-653">653</a></span>
-<span class="normal"><a href="#__codelineno-0-654">654</a></span></pre></div></td><td class="code"><div><pre><span></span><code><span id="__span-0-611"><a id="__codelineno-0-611" name="__codelineno-0-611"></a><span class="k">def</span><span class="w"> </span><span class="nf">update</span><span class="p">(</span><span class="n">proxy</span><span class="p">:</span> <span class="n">OwnedProxy</span><span class="p">[</span><span class="n">T</span><span class="p">]</span> <span class="o">|</span> <span class="n">RefMutProxy</span><span class="p">[</span><span class="n">T</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="normal"><a href="#__codelineno-0-654">654</a></span>
+<span class="normal"><a href="#__codelineno-0-655">655</a></span>
+<span class="normal"><a href="#__codelineno-0-656">656</a></span></pre></div></td><td class="code"><div><pre><span></span><code><span id="__span-0-611"><a id="__codelineno-0-611" name="__codelineno-0-611"></a><span class="k">def</span><span class="w"> </span><span class="nf">update</span><span class="p">(</span><span class="n">proxy</span><span class="p">:</span> <span class="n">OwnedProxy</span><span class="p">[</span><span class="n">T</span><span class="p">]</span> <span class="o">|</span> <span class="n">RefMutProxy</span><span class="p">[</span><span class="n">T</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
 </span><span id="__span-0-612"><a id="__codelineno-0-612" name="__codelineno-0-612"></a><span class="w">    </span><span class="sd">"""Update the global copy of the target.</span>
 </span><span id="__span-0-613"><a id="__codelineno-0-613" name="__codelineno-0-613"></a>
 </span><span id="__span-0-614"><a id="__codelineno-0-614" name="__codelineno-0-614"></a><span class="sd">    Note:</span>
@@ -5789,35 +5793,37 @@ protocol.</p>
 </span><span id="__span-0-623"><a id="__codelineno-0-623" name="__codelineno-0-623"></a><span class="sd">            as the new global value.</span>
 </span><span id="__span-0-624"><a id="__codelineno-0-624" name="__codelineno-0-624"></a>
 </span><span id="__span-0-625"><a id="__codelineno-0-625" name="__codelineno-0-625"></a><span class="sd">    Raises:</span>
-</span><span id="__span-0-626"><a id="__codelineno-0-626" name="__codelineno-0-626"></a><span class="sd">        MutableBorrowError: if `proxy` has been mutably borrowed.</span>
-</span><span id="__span-0-627"><a id="__codelineno-0-627" name="__codelineno-0-627"></a><span class="sd">        NotImplementedError: if the `connector` of the `store` used to create</span>
-</span><span id="__span-0-628"><a id="__codelineno-0-628" name="__codelineno-0-628"></a><span class="sd">            the proxy does not implement the</span>
-</span><span id="__span-0-629"><a id="__codelineno-0-629" name="__codelineno-0-629"></a><span class="sd">            [`DeferrableConnector`][proxystore.connectors.protocols.DeferrableConnector]</span>
-</span><span id="__span-0-630"><a id="__codelineno-0-630" name="__codelineno-0-630"></a><span class="sd">            protocol.</span>
-</span><span id="__span-0-631"><a id="__codelineno-0-631" name="__codelineno-0-631"></a><span class="sd">        ReferenceNotOwnedError: if `proxy` is not an</span>
-</span><span id="__span-0-632"><a id="__codelineno-0-632" name="__codelineno-0-632"></a><span class="sd">            [`OwnedProxy`][proxystore.store.ref.OwnedProxy] or</span>
-</span><span id="__span-0-633"><a id="__codelineno-0-633" name="__codelineno-0-633"></a><span class="sd">            [`RefMutProxy`][proxystore.store.ref.RefMutProxy] instance.</span>
-</span><span id="__span-0-634"><a id="__codelineno-0-634" name="__codelineno-0-634"></a><span class="sd">    """</span>
-</span><span id="__span-0-635"><a id="__codelineno-0-635" name="__codelineno-0-635"></a>    <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">proxy</span><span class="p">,</span> <span class="p">(</span><span class="n">OwnedProxy</span><span class="p">,</span> <span class="n">RefMutProxy</span><span class="p">)):</span>
-</span><span id="__span-0-636"><a id="__codelineno-0-636" name="__codelineno-0-636"></a>        <span class="k">raise</span> <span class="n">ReferenceNotOwnedError</span><span class="p">(</span><span class="s1">'Reference is an immutable borrow.'</span><span class="p">)</span>
-</span><span id="__span-0-637"><a id="__codelineno-0-637" name="__codelineno-0-637"></a>    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">proxy</span><span class="p">,</span> <span class="n">OwnedProxy</span><span class="p">)</span> <span class="ow">and</span> <span class="p">(</span>
-</span><span id="__span-0-638"><a id="__codelineno-0-638" name="__codelineno-0-638"></a>        <span class="nb">object</span><span class="o">.</span><span class="fm">__getattribute__</span><span class="p">(</span><span class="n">proxy</span><span class="p">,</span> <span class="s1">'__proxy_ref_mut_count__'</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">0</span>
-</span><span id="__span-0-639"><a id="__codelineno-0-639" name="__codelineno-0-639"></a>        <span class="ow">or</span> <span class="nb">object</span><span class="o">.</span><span class="fm">__getattribute__</span><span class="p">(</span><span class="n">proxy</span><span class="p">,</span> <span class="s1">'__proxy_ref_count__'</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">0</span>
-</span><span id="__span-0-640"><a id="__codelineno-0-640" name="__codelineno-0-640"></a>    <span class="p">):</span>
-</span><span id="__span-0-641"><a id="__codelineno-0-641" name="__codelineno-0-641"></a>        <span class="k">raise</span> <span class="n">MutableBorrowError</span><span class="p">(</span>
-</span><span id="__span-0-642"><a id="__codelineno-0-642" name="__codelineno-0-642"></a>            <span class="s1">'OwnedProxy has been borrowed. Cannot mutate.'</span><span class="p">,</span>
-</span><span id="__span-0-643"><a id="__codelineno-0-643" name="__codelineno-0-643"></a>        <span class="p">)</span>
-</span><span id="__span-0-644"><a id="__codelineno-0-644" name="__codelineno-0-644"></a>    <span class="k">if</span> <span class="ow">not</span> <span class="n">is_resolved</span><span class="p">(</span><span class="n">proxy</span><span class="p">):</span>
-</span><span id="__span-0-645"><a id="__codelineno-0-645" name="__codelineno-0-645"></a>        <span class="k">return</span>
-</span><span id="__span-0-646"><a id="__codelineno-0-646" name="__codelineno-0-646"></a>
-</span><span id="__span-0-647"><a id="__codelineno-0-647" name="__codelineno-0-647"></a>    <span class="n">store</span> <span class="o">=</span> <span class="n">proxy</span><span class="o">.</span><span class="n">__proxy_factory__</span><span class="o">.</span><span class="n">get_store</span><span class="p">()</span>
-</span><span id="__span-0-648"><a id="__codelineno-0-648" name="__codelineno-0-648"></a>    <span class="k">try</span><span class="p">:</span>
-</span><span id="__span-0-649"><a id="__codelineno-0-649" name="__codelineno-0-649"></a>        <span class="n">store</span><span class="o">.</span><span class="n">_set</span><span class="p">(</span><span class="n">proxy</span><span class="o">.</span><span class="n">__proxy_factory__</span><span class="o">.</span><span class="n">key</span><span class="p">,</span> <span class="n">proxy</span><span class="o">.</span><span class="n">__proxy_wrapped__</span><span class="p">)</span>
-</span><span id="__span-0-650"><a id="__codelineno-0-650" name="__codelineno-0-650"></a>    <span class="k">except</span> <span class="ne">NotImplementedError</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>  <span class="c1"># pragma: no cover</span>
-</span><span id="__span-0-651"><a id="__codelineno-0-651" name="__codelineno-0-651"></a>        <span class="k">raise</span> <span class="ne">NotImplementedError</span><span class="p">(</span>
-</span><span id="__span-0-652"><a id="__codelineno-0-652" name="__codelineno-0-652"></a>            <span class="s1">'Mutating the global copy of the value requires a connector '</span>
-</span><span id="__span-0-653"><a id="__codelineno-0-653" name="__codelineno-0-653"></a>            <span class="s1">'type that supports set().'</span><span class="p">,</span>
-</span><span id="__span-0-654"><a id="__codelineno-0-654" name="__codelineno-0-654"></a>        <span class="p">)</span> <span class="kn">from</span><span class="w"> </span><span class="nn">e</span>
+</span><span id="__span-0-626"><a id="__codelineno-0-626" name="__codelineno-0-626"></a><span class="sd">        MutableBorrowError: if `proxy` is an</span>
+</span><span id="__span-0-627"><a id="__codelineno-0-627" name="__codelineno-0-627"></a><span class="sd">            [`OwnedProxy`][proxystore.store.ref.OwnedProxy] which has been</span>
+</span><span id="__span-0-628"><a id="__codelineno-0-628" name="__codelineno-0-628"></a><span class="sd">            borrowed, mutably or immutably.</span>
+</span><span id="__span-0-629"><a id="__codelineno-0-629" name="__codelineno-0-629"></a><span class="sd">        NotImplementedError: if the `connector` of the `store` used to create</span>
+</span><span id="__span-0-630"><a id="__codelineno-0-630" name="__codelineno-0-630"></a><span class="sd">            the proxy does not implement the</span>
+</span><span id="__span-0-631"><a id="__codelineno-0-631" name="__codelineno-0-631"></a><span class="sd">            [`DeferrableConnector`][proxystore.connectors.protocols.DeferrableConnector]</span>
+</span><span id="__span-0-632"><a id="__codelineno-0-632" name="__codelineno-0-632"></a><span class="sd">            protocol.</span>
+</span><span id="__span-0-633"><a id="__codelineno-0-633" name="__codelineno-0-633"></a><span class="sd">        ReferenceNotOwnedError: if `proxy` is not an</span>
+</span><span id="__span-0-634"><a id="__codelineno-0-634" name="__codelineno-0-634"></a><span class="sd">            [`OwnedProxy`][proxystore.store.ref.OwnedProxy] or</span>
+</span><span id="__span-0-635"><a id="__codelineno-0-635" name="__codelineno-0-635"></a><span class="sd">            [`RefMutProxy`][proxystore.store.ref.RefMutProxy] instance.</span>
+</span><span id="__span-0-636"><a id="__codelineno-0-636" name="__codelineno-0-636"></a><span class="sd">    """</span>
+</span><span id="__span-0-637"><a id="__codelineno-0-637" name="__codelineno-0-637"></a>    <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">proxy</span><span class="p">,</span> <span class="p">(</span><span class="n">OwnedProxy</span><span class="p">,</span> <span class="n">RefMutProxy</span><span class="p">)):</span>
+</span><span id="__span-0-638"><a id="__codelineno-0-638" name="__codelineno-0-638"></a>        <span class="k">raise</span> <span class="n">ReferenceNotOwnedError</span><span class="p">(</span><span class="s1">'Reference is an immutable borrow.'</span><span class="p">)</span>
+</span><span id="__span-0-639"><a id="__codelineno-0-639" name="__codelineno-0-639"></a>    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">proxy</span><span class="p">,</span> <span class="n">OwnedProxy</span><span class="p">)</span> <span class="ow">and</span> <span class="p">(</span>
+</span><span id="__span-0-640"><a id="__codelineno-0-640" name="__codelineno-0-640"></a>        <span class="nb">object</span><span class="o">.</span><span class="fm">__getattribute__</span><span class="p">(</span><span class="n">proxy</span><span class="p">,</span> <span class="s1">'__proxy_ref_mut_count__'</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">0</span>
+</span><span id="__span-0-641"><a id="__codelineno-0-641" name="__codelineno-0-641"></a>        <span class="ow">or</span> <span class="nb">object</span><span class="o">.</span><span class="fm">__getattribute__</span><span class="p">(</span><span class="n">proxy</span><span class="p">,</span> <span class="s1">'__proxy_ref_count__'</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">0</span>
+</span><span id="__span-0-642"><a id="__codelineno-0-642" name="__codelineno-0-642"></a>    <span class="p">):</span>
+</span><span id="__span-0-643"><a id="__codelineno-0-643" name="__codelineno-0-643"></a>        <span class="k">raise</span> <span class="n">MutableBorrowError</span><span class="p">(</span>
+</span><span id="__span-0-644"><a id="__codelineno-0-644" name="__codelineno-0-644"></a>            <span class="s1">'OwnedProxy has been borrowed. Cannot mutate.'</span><span class="p">,</span>
+</span><span id="__span-0-645"><a id="__codelineno-0-645" name="__codelineno-0-645"></a>        <span class="p">)</span>
+</span><span id="__span-0-646"><a id="__codelineno-0-646" name="__codelineno-0-646"></a>    <span class="k">if</span> <span class="ow">not</span> <span class="n">is_resolved</span><span class="p">(</span><span class="n">proxy</span><span class="p">):</span>
+</span><span id="__span-0-647"><a id="__codelineno-0-647" name="__codelineno-0-647"></a>        <span class="k">return</span>
+</span><span id="__span-0-648"><a id="__codelineno-0-648" name="__codelineno-0-648"></a>
+</span><span id="__span-0-649"><a id="__codelineno-0-649" name="__codelineno-0-649"></a>    <span class="n">store</span> <span class="o">=</span> <span class="n">proxy</span><span class="o">.</span><span class="n">__proxy_factory__</span><span class="o">.</span><span class="n">get_store</span><span class="p">()</span>
+</span><span id="__span-0-650"><a id="__codelineno-0-650" name="__codelineno-0-650"></a>    <span class="k">try</span><span class="p">:</span>
+</span><span id="__span-0-651"><a id="__codelineno-0-651" name="__codelineno-0-651"></a>        <span class="n">store</span><span class="o">.</span><span class="n">_set</span><span class="p">(</span><span class="n">proxy</span><span class="o">.</span><span class="n">__proxy_factory__</span><span class="o">.</span><span class="n">key</span><span class="p">,</span> <span class="n">proxy</span><span class="o">.</span><span class="n">__proxy_wrapped__</span><span class="p">)</span>
+</span><span id="__span-0-652"><a id="__codelineno-0-652" name="__codelineno-0-652"></a>    <span class="k">except</span> <span class="ne">NotImplementedError</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>  <span class="c1"># pragma: no cover</span>
+</span><span id="__span-0-653"><a id="__codelineno-0-653" name="__codelineno-0-653"></a>        <span class="k">raise</span> <span class="ne">NotImplementedError</span><span class="p">(</span>
+</span><span id="__span-0-654"><a id="__codelineno-0-654" name="__codelineno-0-654"></a>            <span class="s1">'Mutating the global copy of the value requires a connector '</span>
+</span><span id="__span-0-655"><a id="__codelineno-0-655" name="__codelineno-0-655"></a>            <span class="s1">'type that supports set().'</span><span class="p">,</span>
+</span><span id="__span-0-656"><a id="__codelineno-0-656" name="__codelineno-0-656"></a>        <span class="p">)</span> <span class="kn">from</span><span class="w"> </span><span class="nn">e</span>
 </span></code></pre></div></td></tr></table></div>
             </details>
     </div>

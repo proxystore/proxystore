@@ -4281,7 +4281,8 @@ inefficient. E.g.,</p>
 </span></code></pre></div></td></tr></table></div>
 <div class="admonition tip">
 <p class="admonition-title">Tip</p>
-<p>In some cases, data may already be serialized in which case an identity function can be passed as the serializer (e.g., <code class="language-python highlight"><span class="k">lambda</span> <span class="n">x</span><span class="p">:</span> <span class="n">x</span></code>).
+<p>In some cases, data may already be serialized in which case an identity function can be passed as the serializer.
+Use an importable function rather than a <code class="language-python highlight"><span class="k">lambda</span></code> so the store's config can be pickled with its proxies.
 However, <code>populate_target=False</code> should also be set in this case to avoid prepopulating the proxy with the serialized target object.
 See the <a class="autorefs autorefs-internal" title="            Store" href="../../api/store/base/#proxystore.store.base.Store"><code>Store</code></a> docstring for more information.</p>
 </div>
