@@ -177,6 +177,41 @@ def test_lease_lifetime_extend_to_datetime(
     lifetime.close()
 
 
+def test_lease_lifetime_extend_to_earlier_datetime(
+    store: Store[LocalConnector],
+) -> None:
+    lifetime = LeaseLifetime(store, expiry=60)
+    key = store.put('value', lifetime=lifetime)
+    old_timer = lifetime._timer
+    assert old_timer is not None
+
+    # An expiry in the past should end the lease now, not after 60 seconds.
+    lifetime.extend(datetime.now() - timedelta(seconds=1))
+
+    assert old_timer.finished.is_set()
+    assert lifetime._timer is not None
+    assert lifetime._timer is not old_timer
+    lifetime._timer.join(timeout=5)
+    assert lifetime.done()
+    assert not store.exists(key)
+
+
+def test_lease_lifetime_timer_restarts_before_expiry(
+    store: Store[LocalConnector],
+) -> None:
+    lifetime = LeaseLifetime(store, expiry=60)
+    old_timer = lifetime._timer
+
+    # Simulate the timer ending before the expiry.
+    lifetime._timer_callback()
+
+    assert not lifetime.done()
+    assert old_timer is not None
+    assert old_timer.finished.is_set()
+    assert lifetime._timer is not old_timer
+    lifetime.close()
+
+
 def test_lease_lifetime_does_not_block_exit(tmp_path: pathlib.Path) -> None:
     store_dir = tmp_path / 'store'
     code = textwrap.dedent(
