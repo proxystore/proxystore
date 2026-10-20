@@ -4584,8 +4584,12 @@ sends all operations to its <em>home</em> endpoint, an endpoint running on the s
 system. By default, the connector scans the ProxyStore home directory and uses
 the only running endpoint as its home endpoint, connecting with the
 <code>connection.json</code> file that the running endpoint writes to its directory (see
-<a href="#security">Security</a>). An error is raised if there are no running endpoints
-or several.</p>
+<a href="#security">Security</a>). An error is raised if several endpoints are running.
+If no endpoint is running on this host, the connector uses an endpoint
+started on another host which shares the ProxyStore home directory, such as
+an endpoint on the login node of a cluster used from a compute node. It
+connects to each of those endpoints to check that it is still running, and
+an error is raised if none or several can be reached.</p>
 <p>The connector's configuration is stored in each proxy created by the store,
 so when a proxy is resolved on a different system, the connector is recreated
 there and uses the endpoint running on that system. The key of an object
