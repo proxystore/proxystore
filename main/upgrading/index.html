@@ -1,0 +1,5374 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+        <meta name="description" content="Pass-by-reference for distributed Python applications via transparent object proxies">
+      
+      
+        <meta name="author" content="Greg Pauloski and Globus Labs">
+      
+      
+        <link rel="canonical" href="https://docs.proxystore.dev/latest/upgrading/">
+      
+      
+        <link rel="prev" href="../versioning/">
+      
+      
+        <link rel="next" href="../concepts/">
+      
+      
+        
+      
+      
+      <link rel="icon" href="../static/favicon.png">
+      <meta name="generator" content="mkdocs-ProperDocs 1.6.7, mkdocs-material-9.7.7">
+    
+    
+      
+        <title>Upgrading to v2 - ProxyStore</title>
+      
+    
+    
+      <link rel="stylesheet" href="../assets/stylesheets/main.ec1eaa64.min.css">
+      
+        
+        <link rel="stylesheet" href="../assets/stylesheets/palette.ab4e12ef.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Open+Sans:300,300i,400,400i,700,700i%7CRoboto+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"Open Sans";--md-code-font:"Roboto Mono"}</style>
+      
+    
+    
+      <link rel="stylesheet" href="../assets/_mkdocstrings.css">
+    
+      <link rel="stylesheet" href="../css/extra.css">
+    
+      <link rel="stylesheet" href="../css/mkdocstrings.css">
+    
+    <script>__md_scope=new URL("..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+  </head>
+  
+  
+    
+    
+      
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="default" data-md-color-primary="indigo" data-md-color-accent="indigo">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#upgrading-to-proxystore-v2" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+      <div data-md-color-scheme="default" data-md-component="outdated" hidden>
+        
+      </div>
+    
+    
+      
+
+<header class="md-header" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href=".." title="ProxyStore" class="md-header__button md-logo" aria-label="ProxyStore" data-md-component="logo">
+      
+  <img src="../static/icon-white.svg" alt="logo">
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            ProxyStore
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              Upgrading to v2
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+      
+        <form class="md-header__option" data-md-component="palette">
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme)" data-md-color-scheme="default" data-md-color-primary="indigo" data-md-color-accent="indigo"  aria-label="Switch to light mode"  type="radio" name="__palette" id="__palette_0">
+    
+      <label class="md-header__button md-icon" title="Switch to light mode" for="__palette_1" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="m14.3 16-.7-2h-3.2l-.7 2H7.8L11 7h2l3.2 9zM20 8.69V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12zm-9.15 3.96h2.3L12 9z"/></svg>
+      </label>
+    
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme: light)" data-md-color-scheme="default" data-md-color-primary="proxystore-light" data-md-color-accent="indigo"  aria-label="Switch to dark mode"  type="radio" name="__palette" id="__palette_1">
+    
+      <label class="md-header__button md-icon" title="Switch to dark mode" for="__palette_2" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a4 4 0 0 0-4 4 4 4 0 0 0 4 4 4 4 0 0 0 4-4 4 4 0 0 0-4-4m0 10a6 6 0 0 1-6-6 6 6 0 0 1 6-6 6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12z"/></svg>
+      </label>
+    
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme: dark)" data-md-color-scheme="slate" data-md-color-primary="proxystore-dark" data-md-color-accent="indigo"  aria-label="Switch to system preference"  type="radio" name="__palette" id="__palette_2">
+    
+      <label class="md-header__button md-icon" title="Switch to system preference" for="__palette_0" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 18c-.89 0-1.74-.2-2.5-.55C11.56 16.5 13 14.42 13 12s-1.44-4.5-3.5-5.45C10.26 6.2 11.11 6 12 6a6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12z"/></svg>
+      </label>
+    
+  
+</form>
+      
+    
+    
+      <script>var palette=__md_get("__palette");if(palette&&palette.color){if("(prefers-color-scheme)"===palette.color.media){var media=matchMedia("(prefers-color-scheme: light)"),input=document.querySelector(media.matches?"[data-md-color-media='(prefers-color-scheme: light)']":"[data-md-color-media='(prefers-color-scheme: dark)']");palette.color.media=input.getAttribute("data-md-color-media"),palette.color.scheme=input.getAttribute("data-md-color-scheme"),palette.color.primary=input.getAttribute("data-md-color-primary"),palette.color.accent=input.getAttribute("data-md-color-accent")}for(var[key,value]of Object.entries(palette.color))document.body.setAttribute("data-md-color-"+key,value)}</script>
+    
+    
+    
+      
+      
+        <label class="md-header__button md-icon" for="__search">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        </label>
+        <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Search">
+        
+          <a href="javascript:void(0)" class="md-search__icon md-icon" title="Share" aria-label="Share" data-clipboard data-clipboard-text="" data-md-component="search-share" tabindex="-1">
+            
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M18 16.08c-.76 0-1.44.3-1.96.77L8.91 12.7c.05-.23.09-.46.09-.7s-.04-.47-.09-.7l7.05-4.11c.54.5 1.25.81 2.04.81a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3c0 .24.04.47.09.7L8.04 9.81C7.5 9.31 6.79 9 6 9a3 3 0 0 0-3 3 3 3 0 0 0 3 3c.79 0 1.5-.31 2.04-.81l7.12 4.15c-.05.21-.08.43-.08.66 0 1.61 1.31 2.91 2.92 2.91s2.92-1.3 2.92-2.91A2.92 2.92 0 0 0 18 16.08"/></svg>
+          </a>
+        
+        <button type="reset" class="md-search__icon md-icon" title="Clear" aria-label="Clear" tabindex="-1">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+        </button>
+      </nav>
+      
+        <div class="md-search__suggest" data-md-component="search-suggest"></div>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" tabindex="0" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list" role="presentation"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+      
+    
+    
+      <div class="md-header__source">
+        <a href="https://github.com/proxystore/proxystore" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    proxystore/proxystore
+  </div>
+</a>
+      </div>
+    
+  </nav>
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+          
+            
+<nav class="md-tabs" aria-label="Tabs" data-md-component="tabs">
+  <div class="md-grid">
+    <ul class="md-tabs__list">
+      
+        
+  
+  
+  
+    
+  
+  
+    
+    
+      <li class="md-tabs__item md-tabs__item--active">
+        <a href=".." class="md-tabs__link">
+          
+  
+  
+  Home
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../concepts/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Concepts
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../guides/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Guides
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../api/" class="md-tabs__link">
+          
+  
+  
+  API Reference
+
+        </a>
+      </li>
+    
+  
+
+    
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../contributing/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Contributing
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../publications/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Publications
+
+      </a>
+    </li>
+  
+
+      
+    </ul>
+  </div>
+</nav>
+          
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+  
+
+
+<nav class="md-nav md-nav--primary md-nav--lifted" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href=".." title="ProxyStore" class="md-nav__button md-logo" aria-label="ProxyStore" data-md-component="logo">
+      
+  <img src="../static/icon-white.svg" alt="logo">
+
+    </a>
+    ProxyStore
+  </label>
+  
+    <div class="md-nav__source">
+      <a href="https://github.com/proxystore/proxystore" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    proxystore/proxystore
+  </div>
+</a>
+    </div>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+  
+  
+    
+  
+  
+  
+    
+    
+    
+    
+      
+        
+        
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_1" checked>
+        
+          
+          <label class="md-nav__link" for="__nav_1" id="__nav_1_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Home
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_1_label" aria-expanded="true">
+          <label class="md-nav__title" for="__nav_1">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Home
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href=".." class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Overview
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../installation/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Installation
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../get-started/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Get Started
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../examples/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Examples
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../faq/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    FAQ
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../versioning/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Versioning
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+    
+  
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Upgrading to v2
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Upgrading to v2
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#tldr" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        TL;DR
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#compatibility" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Compatibility
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#installation" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Installation
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#stores" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Stores
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Stores">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#constructor-and-names" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Constructor and Names
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#removed-registration-api" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Removed Registration API
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ownership-and-clearing-on-close" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Ownership and Clearing on Close
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#connector-options" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Connector Options
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#one-serializer-per-store" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        One Serializer per Store
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#cache-size-in-bytes" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Cache Size in Bytes
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#non-proxiable-objects" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Non-Proxiable Objects
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#other-store-changes" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Other Store Changes
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#connectors" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Connectors
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Connectors">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#moved-from-proxystore-ex" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Moved from proxystore-ex
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#behavior-changes" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Behavior Changes
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#custom-connectors" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Custom Connectors
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#proxies" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Proxies
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#streaming" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Streaming
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Streaming">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#stream-filters" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Stream Filters
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#stream-fixes" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Stream Fixes
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#proxy-futures" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Proxy Futures
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#reference-ownership" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Reference Ownership
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#endpoints" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Endpoints
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Endpoints">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#what-changed" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        What Changed
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#endpointconnector" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        EndpointConnector
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#cli-changes" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        CLI Changes
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#python-api" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Python API
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#removed-modules-and-apis" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Removed Modules and APIs
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="https://github.com/proxystore/proxystore/issues" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Issues (GitHub)
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="https://github.com/proxystore/proxystore/releases" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Changelog (GitHub)
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_2" >
+        
+          
+          <div class="md-nav__link md-nav__container">
+            <a href="../concepts/" class="md-nav__link ">
+              
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Concepts
+  
+
+    
+  </span>
+  
+  
+
+            </a>
+            
+              
+              <label class="md-nav__link " for="__nav_2" id="__nav_2_label" tabindex="0">
+                <span class="md-nav__icon md-icon"></span>
+              </label>
+            
+          </div>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_2_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_2">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Concepts
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../concepts/proxy/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Proxy
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../concepts/connector/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Connector
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../concepts/store/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Store
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3" >
+        
+          
+          <div class="md-nav__link md-nav__container">
+            <a href="../guides/" class="md-nav__link ">
+              
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Guides
+  
+
+    
+  </span>
+  
+  
+
+            </a>
+            
+              
+              <label class="md-nav__link " for="__nav_3" id="__nav_3_label" tabindex="0">
+                <span class="md-nav__icon md-icon"></span>
+              </label>
+            
+          </div>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_3_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_3">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Guides
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../guides/daos/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    DAOS
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../guides/dask-distributed/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Dask Distributed
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../guides/globus-compute/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Globus Compute
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../guides/endpoints/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Endpoints Overview
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../guides/endpoints-debugging/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Endpoints Debugging
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../guides/object-lifetimes/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Object Lifetimes
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../guides/performance/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Performance Tracking
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../guides/proxy-futures/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Proxy Futures
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../guides/streaming/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Streaming
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4" >
+        
+          
+          <label class="md-nav__link" for="__nav_4" id="__nav_4_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    API Reference
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_4_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_4">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    API Reference
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4_1" >
+        
+          
+          <label class="md-nav__link" for="__nav_4_1" id="__nav_4_1_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    ProxyStore
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_4_1_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_4_1">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    ProxyStore
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../api/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    proxystore
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4_1_2" >
+        
+          
+          <div class="md-nav__link md-nav__container">
+            <a href="../api/connectors/" class="md-nav__link ">
+              
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    proxystore.connectors
+  
+
+    
+  </span>
+  
+  
+
+            </a>
+            
+              
+              <label class="md-nav__link " for="__nav_4_1_2" id="__nav_4_1_2_label" tabindex="0">
+                <span class="md-nav__icon md-icon"></span>
+              </label>
+            
+          </div>
+        
+        <nav class="md-nav" data-md-level="3" aria-labelledby="__nav_4_1_2_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_4_1_2">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    proxystore.connectors
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../api/connectors/daos/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    daos
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../api/connectors/endpoint/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    endpoint
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../api/connectors/file/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    file
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../api/connectors/globus/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    globus
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../api/connectors/local/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    local
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../api/connectors/multi/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    multi
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../api/connectors/protocols/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    protocols
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../api/connectors/redis/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    redis
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../api/connectors/zmq/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    zmq
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4_1_3" >
+        
+          
+          <div class="md-nav__link md-nav__container">
+            <a href="../api/endpoint/" class="md-nav__link ">
+              
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    proxystore.endpoint
+  
+
+    
+  </span>
+  
+  
+
+            </a>
+            
+              
+              <label class="md-nav__link " for="__nav_4_1_3" id="__nav_4_1_3_label" tabindex="0">
+                <span class="md-nav__icon md-icon"></span>
+              </label>
+            
+          </div>
+        
+        <nav class="md-nav" data-md-level="3" aria-labelledby="__nav_4_1_3_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_4_1_3">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    proxystore.endpoint
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../api/endpoint/auth/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    auth
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../api/endpoint/cli/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    cli
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../api/endpoint/client/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    client
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../api/endpoint/config/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    config
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../api/endpoint/directory/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    directory
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../api/endpoint/dispatch/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    dispatch
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../api/endpoint/endpoint/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    endpoint
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../api/endpoint/exceptions/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    exceptions
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../api/endpoint/files/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    files
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../api/endpoint/identity/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    identity
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4_1_3_11" >
+        
+          
+          <div class="md-nav__link md-nav__container">
+            <a href="../api/endpoint/p2p/" class="md-nav__link ">
+              
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    p2p
+  
+
+    
+  </span>
+  
+  
+
+            </a>
+            
+              
+              <label class="md-nav__link " for="__nav_4_1_3_11" id="__nav_4_1_3_11_label" tabindex="0">
+                <span class="md-nav__icon md-icon"></span>
+              </label>
+            
+          </div>
+        
+        <nav class="md-nav" data-md-level="4" aria-labelledby="__nav_4_1_3_11_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_4_1_3_11">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    p2p
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../api/endpoint/p2p/addrs/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    addrs
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../api/endpoint/p2p/bindings/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    bindings
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../api/endpoint/p2p/manager/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    manager
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../api/endpoint/peers/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    peers
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../api/endpoint/process/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    process
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../api/endpoint/protocol/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    protocol
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../api/endpoint/server/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    server
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../api/endpoint/storage/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    storage
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4_1_4" >
+        
+          
+          <div class="md-nav__link md-nav__container">
+            <a href="../api/globus/" class="md-nav__link ">
+              
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    proxystore.globus
+  
+
+    
+  </span>
+  
+  
+
+            </a>
+            
+              
+              <label class="md-nav__link " for="__nav_4_1_4" id="__nav_4_1_4_label" tabindex="0">
+                <span class="md-nav__icon md-icon"></span>
+              </label>
+            
+          </div>
+        
+        <nav class="md-nav" data-md-level="3" aria-labelledby="__nav_4_1_4_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_4_1_4">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    proxystore.globus
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../api/globus/app/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    app
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../api/globus/cli/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    cli
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../api/globus/client/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    client
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../api/globus/scopes/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    scopes
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../api/mypy_plugin/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    proxystore.mypy_plugin
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../api/proxy/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    proxystore.proxy
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../api/serialize/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    proxystore.serialize
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4_1_8" >
+        
+          
+          <div class="md-nav__link md-nav__container">
+            <a href="../api/store/" class="md-nav__link ">
+              
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    proxystore.store
+  
+
+    
+  </span>
+  
+  
+
+            </a>
+            
+              
+              <label class="md-nav__link " for="__nav_4_1_8" id="__nav_4_1_8_label" tabindex="0">
+                <span class="md-nav__icon md-icon"></span>
+              </label>
+            
+          </div>
+        
+        <nav class="md-nav" data-md-level="3" aria-labelledby="__nav_4_1_8_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_4_1_8">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    proxystore.store
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../api/store/base/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    base
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../api/store/cache/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    cache
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../api/store/config/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    config
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../api/store/exceptions/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    exceptions
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../api/store/executor/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    executor
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../api/store/factory/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    factory
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../api/store/future/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    future
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../api/store/lifetimes/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    lifetimes
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../api/store/metrics/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    metrics
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../api/store/ref/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    ref
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../api/store/registry/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    registry
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../api/store/scopes/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    scopes
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../api/store/types/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    types
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../api/store/utils/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    utils
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4_1_9" >
+        
+          
+          <div class="md-nav__link md-nav__container">
+            <a href="../api/stream/" class="md-nav__link ">
+              
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    proxystore.stream
+  
+
+    
+  </span>
+  
+  
+
+            </a>
+            
+              
+              <label class="md-nav__link " for="__nav_4_1_9" id="__nav_4_1_9_label" tabindex="0">
+                <span class="md-nav__icon md-icon"></span>
+              </label>
+            
+          </div>
+        
+        <nav class="md-nav" data-md-level="3" aria-labelledby="__nav_4_1_9_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_4_1_9">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    proxystore.stream
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../api/stream/events/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    events
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../api/stream/exceptions/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    exceptions
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../api/stream/filters/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    filters
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../api/stream/protocols/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    protocols
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4_1_9_5" >
+        
+          
+          <div class="md-nav__link md-nav__container">
+            <a href="../api/stream/shims/" class="md-nav__link ">
+              
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    shims
+  
+
+    
+  </span>
+  
+  
+
+            </a>
+            
+              
+              <label class="md-nav__link " for="__nav_4_1_9_5" id="__nav_4_1_9_5_label" tabindex="0">
+                <span class="md-nav__icon md-icon"></span>
+              </label>
+            
+          </div>
+        
+        <nav class="md-nav" data-md-level="4" aria-labelledby="__nav_4_1_9_5_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_4_1_9_5">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    shims
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../api/stream/shims/kafka/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    kafka
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../api/stream/shims/queue/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    queue
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../api/stream/shims/redis/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    redis
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../api/stream/shims/zmq/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    zmq
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4_1_10" >
+        
+          
+          <div class="md-nav__link md-nav__container">
+            <a href="../api/utils/" class="md-nav__link ">
+              
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    proxystore.utils
+  
+
+    
+  </span>
+  
+  
+
+            </a>
+            
+              
+              <label class="md-nav__link " for="__nav_4_1_10" id="__nav_4_1_10_label" tabindex="0">
+                <span class="md-nav__icon md-icon"></span>
+              </label>
+            
+          </div>
+        
+        <nav class="md-nav" data-md-level="3" aria-labelledby="__nav_4_1_10_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_4_1_10">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    proxystore.utils
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../api/utils/config/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    config
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../api/utils/counter/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    counter
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../api/utils/data/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    data
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../api/utils/environment/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    environment
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../api/utils/imports/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    imports
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../api/utils/tasks/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    tasks
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../api/utils/timer/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    timer
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../api/warnings/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    proxystore.warnings
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../api/cli/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    CLI Reference
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5" >
+        
+          
+          <div class="md-nav__link md-nav__container">
+            <a href="../contributing/" class="md-nav__link ">
+              
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Contributing
+  
+
+    
+  </span>
+  
+  
+
+            </a>
+            
+              
+              <label class="md-nav__link " for="__nav_5" id="__nav_5_label" tabindex="0">
+                <span class="md-nav__icon md-icon"></span>
+              </label>
+            
+          </div>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_5_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_5">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Contributing
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../contributing/style-guide/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Style Guide
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../contributing/issues-pull-requests/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Issues and Pull Requests
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../contributing/releases/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Releases
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../publications/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Publications
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#tldr" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        TL;DR
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#compatibility" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Compatibility
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#installation" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Installation
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#stores" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Stores
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Stores">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#constructor-and-names" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Constructor and Names
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#removed-registration-api" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Removed Registration API
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ownership-and-clearing-on-close" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Ownership and Clearing on Close
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#connector-options" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Connector Options
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#one-serializer-per-store" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        One Serializer per Store
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#cache-size-in-bytes" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Cache Size in Bytes
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#non-proxiable-objects" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Non-Proxiable Objects
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#other-store-changes" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Other Store Changes
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#connectors" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Connectors
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Connectors">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#moved-from-proxystore-ex" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Moved from proxystore-ex
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#behavior-changes" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Behavior Changes
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#custom-connectors" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Custom Connectors
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#proxies" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Proxies
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#streaming" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Streaming
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Streaming">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#stream-filters" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Stream Filters
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#stream-fixes" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Stream Fixes
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#proxy-futures" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Proxy Futures
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#reference-ownership" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Reference Ownership
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#endpoints" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Endpoints
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Endpoints">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#what-changed" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        What Changed
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#endpointconnector" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        EndpointConnector
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#cli-changes" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        CLI Changes
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#python-api" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Python API
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#removed-modules-and-apis" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Removed Modules and APIs
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              
+                
+
+
+
+
+              
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+
+  
+  
+
+
+<h1 id="upgrading-to-proxystore-v2">Upgrading to ProxyStore v2<a class="headerlink" href="#upgrading-to-proxystore-v2" title="Permanent link">&para;</a></h1>
+<p>ProxyStore v2 makes stores safe to share between applications; promotes
+streaming, reference ownership, and proxy futures to stable features;
+rebuilds <a href="../guides/endpoints/">ProxyStore Endpoints</a> with more reliable
+peer-to-peer communication, authentication, and encryption; and makes the
+base install lighter. This guide walks through the changes to make when
+upgrading from v1.x.</p>
+<h2 id="tldr">TL;DR<a class="headerlink" href="#tldr" title="Permanent link">&para;</a></h2>
+<p>Most applications only need the following changes. The rest of this guide
+has the details.</p>
+<ul>
+<li>Upgrade every process which shares proxies at the same time, because
+  proxies are not compatible between v1 and v2
+  (<a href="#compatibility">Compatibility</a>).</li>
+<li>Stop endpoints <strong>before</strong> upgrading, then configure them again
+  (<a href="#endpoints">Endpoints</a>).</li>
+<li>Use Python 3.11 or newer, and install <code>proxystore[globus]</code> if you use
+  Globus (<a href="#installation">Installation</a>).</li>
+<li>Create stores with <code>Store(connector)</code>. Names are optional labels, and
+  stores register themselves, so remove <code>register=True</code> and look-ups by name
+  (<a href="#constructor-and-names">Constructor and Names</a>).</li>
+<li>Pass serializers to the <code>Store</code> constructor instead of to each method
+  (<a href="#one-serializer-per-store">One Serializer per Store</a>), and pass
+  connector-specific options through <code>connector_options</code>
+  (<a href="#connector-options">Connector Options</a>).</li>
+<li>Replace <code>cache_size=</code> with <code>cache_size_bytes=</code>
+  (<a href="#cache-size-in-bytes">Cache Size in Bytes</a>).</li>
+<li>Rename <code>filter_=</code> to <code>keep=</code> in streams and invert your filters
+  (<a href="#stream-filters">Stream Filters</a>).</li>
+<li>Replace <code>Future</code> with <code>ProxyFuture</code> and the <code>polling_*</code> arguments with a
+  <code>PollingPolicy</code> (<a href="#proxy-futures">Proxy Futures</a>).</li>
+</ul>
+<h2 id="compatibility">Compatibility<a class="headerlink" href="#compatibility" title="Permanent link">&para;</a></h2>
+<div class="admonition warning">
+<p class="admonition-title">Proxies are not compatible between v1 and v2</p>
+<p>Proxies, store configs, and stream events created by v1 cannot be used
+by v2, and vice versa. Upgrade every process that creates or resolves
+proxies (clients, workers, and endpoints) at the same time, and discard
+any pickled proxies or stream events persisted by v1.</p>
+</div>
+<p>Starting with v2, ProxyStore commits to compatibility within a major
+version. A proxy, store config, or stream event created by any 2.x release
+can be used by any other 2.x release, in both directions, so future
+upgrades within 2.x do not need to happen everywhere at once. See
+<a href="../versioning/">Versioning and Compatibility</a> for the full policy, including
+which modules are public API.</p>
+<h2 id="installation">Installation<a class="headerlink" href="#installation" title="Permanent link">&para;</a></h2>
+<ul>
+<li><strong>Python 3.11+</strong> is required.</li>
+<li><strong><code>proxystore-ex</code> is now part of ProxyStore.</strong> The
+  <a class="autorefs autorefs-internal" title="            DAOSConnector" href="../api/connectors/daos/#proxystore.connectors.daos.DAOSConnector"><code>DAOSConnector</code></a> and
+  <a class="autorefs autorefs-internal" title="            ZeroMQConnector" href="../api/connectors/zmq/#proxystore.connectors.zmq.ZeroMQConnector"><code>ZeroMQConnector</code></a> moved into
+  ProxyStore (see <a href="#moved-from-proxystore-ex">Moved from <code>proxystore-ex</code></a>),
+  and the <code>extensions</code> extra and <code>proxystore.ex</code> module were removed. Remove
+  <code>proxystore-ex</code> from your dependencies.</li>
+<li><strong>The base install is lighter.</strong> Optional dependencies moved to extras.
+  Notably, install <code>proxystore[globus]</code> if you use the
+  <a class="autorefs autorefs-internal" title="            GlobusConnector" href="../api/connectors/globus/#proxystore.connectors.globus.GlobusConnector"><code>GlobusConnector</code></a> or the
+  <code>proxystore-globus-auth</code> CLI. Importing a feature without its extra raises
+  an <a class="autorefs autorefs-external" href="https://docs.python.org/3/builtins/exceptions.html#ImportError"><code>ImportError</code></a> which says what to install.</li>
+</ul>
+<h2 id="stores">Stores<a class="headerlink" href="#stores" title="Permanent link">&para;</a></h2>
+<h3 id="constructor-and-names">Constructor and Names<a class="headerlink" href="#constructor-and-names" title="Permanent link">&para;</a></h3>
+<p>Stores are now identified by a unique, randomly generated ID rather than a
+user-chosen name. In v1, two stores with the same name but different
+connectors (e.g., from two applications sharing a Dask or Globus Compute
+worker) collided in the per-process registry, and proxies could silently
+resolve through the wrong connector. The name is now an optional label used
+only in logs.</p>
+<p>The connector is the first positional argument of
+<a class="autorefs autorefs-internal" title="            Store" href="../api/store/base/#proxystore.store.base.Store"><code>Store</code></a>, and <code>name</code> is optional and
+keyword-only.</p>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="c1"># v1</span>
+</span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="n">store</span> <span class="o">=</span> <span class="n">Store</span><span class="p">(</span><span class="s1">'my-store'</span><span class="p">,</span> <span class="n">FileConnector</span><span class="p">(</span><span class="s1">'/tmp/data'</span><span class="p">),</span> <span class="n">register</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+</span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>
+</span><span id="__span-0-4"><a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a><span class="c1"># v2</span>
+</span><span id="__span-0-5"><a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a><span class="n">store</span> <span class="o">=</span> <span class="n">Store</span><span class="p">(</span><span class="n">FileConnector</span><span class="p">(</span><span class="s1">'/tmp/data'</span><span class="p">))</span>
+</span><span id="__span-0-6"><a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a><span class="n">store</span> <span class="o">=</span> <span class="n">Store</span><span class="p">(</span><span class="n">FileConnector</span><span class="p">(</span><span class="s1">'/tmp/data'</span><span class="p">),</span> <span class="n">name</span><span class="o">=</span><span class="s1">'my-store'</span><span class="p">)</span>  <span class="c1"># Optional label</span>
+</span></code></pre></div>
+<p>Every <code>Store</code> registers itself when created and unregisters itself when
+closed, so <code>register=True</code> is no longer needed (or accepted). We recommend
+using stores as context managers.</p>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="k">with</span> <span class="n">Store</span><span class="p">(</span><span class="n">FileConnector</span><span class="p">(</span><span class="s1">'/tmp/data'</span><span class="p">))</span> <span class="k">as</span> <span class="n">store</span><span class="p">:</span>
+</span><span id="__span-1-2"><a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a>    <span class="n">proxy</span> <span class="o">=</span> <span class="n">store</span><span class="o">.</span><span class="n">proxy</span><span class="p">(</span><span class="n">obj</span><span class="p">)</span>
+</span></code></pre></div>
+<h3 id="removed-registration-api">Removed Registration API<a class="headerlink" href="#removed-registration-api" title="Permanent link">&para;</a></h3>
+<table>
+<thead>
+<tr>
+<th>Removed</th>
+<th>Replacement</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>Store(..., register=True)</code></td>
+<td>None. Stores are always registered.</td>
+</tr>
+<tr>
+<td><code>StoreConfig.auto_register</code></td>
+<td>None. Remove the field from configs and TOML files (unknown fields fail validation).</td>
+</tr>
+<tr>
+<td><code>get_store('name')</code></td>
+<td>Keep a reference to the <code>Store</code>, or pass <a class="autorefs autorefs-internal" title="            config" href="../api/store/base/#proxystore.store.base.Store.config"><code>store.config()</code></a> to other processes and use <a class="autorefs autorefs-internal" title="            from_config
+
+
+  
+      classmethod
+  " href="../api/store/base/#proxystore.store.base.Store.from_config"><code>Store.from_config()</code></a> or <a class="autorefs autorefs-internal" title="            get_or_create_store" href="../api/store/#proxystore.store.get_or_create_store"><code>get_or_create_store()</code></a>.</td>
+</tr>
+<tr>
+<td><code>register_store()</code>, <code>unregister_store()</code>, <code>store_registration()</code></td>
+<td>None. Stores register when created and unregister on <a class="autorefs autorefs-internal" title="            close" href="../api/store/base/#proxystore.store.base.Store.close"><code>close()</code></a>.</td>
+</tr>
+<tr>
+<td><code>StoreExistsError</code></td>
+<td>None. It is no longer raised.</td>
+</tr>
+</tbody>
+</table>
+<p><a class="autorefs autorefs-internal" title="            get_store" href="../api/store/#proxystore.store.get_store"><code>get_store(proxy)</code></a> and
+<a class="autorefs autorefs-internal" title="            get_or_create_store" href="../api/store/#proxystore.store.get_or_create_store"><code>get_or_create_store(config)</code></a> remain,
+with two changes:</p>
+<ul>
+<li><code>get_store(proxy)</code> always returns a store (creating it from the proxy's
+  config if needed) rather than <code>None</code>.</li>
+<li><code>get_or_create_store()</code> no longer takes <code>register=</code>.</li>
+</ul>
+<h3 id="ownership-and-clearing-on-close">Ownership and Clearing on Close<a class="headerlink" href="#ownership-and-clearing-on-close" title="Permanent link">&para;</a></h3>
+<p>In v1, connectors that clear their data on close (e.g.,
+<a class="autorefs autorefs-internal" title="            FileConnector" href="../api/connectors/file/#proxystore.connectors.file.FileConnector"><code>FileConnector</code></a> and
+<a class="autorefs autorefs-internal" title="            GlobusConnector" href="../api/connectors/globus/#proxystore.connectors.globus.GlobusConnector"><code>GlobusConnector</code></a>, which
+default to <code>clear=True</code>) copied that setting into their config. As a result,
+<em>any</em> store created from that config deleted the shared data when closed.
+This happened, for example, in
+<a class="autorefs autorefs-internal" title="            close" href="../api/stream/#proxystore.stream.StreamConsumer.close"><code>StreamConsumer.close(stores=True)</code></a>,
+lifetimes with <code>close_stores=True</code>,
+<a class="autorefs autorefs-internal" title="            shutdown" href="../api/store/executor/#proxystore.store.executor.StoreExecutor.shutdown"><code>StoreExecutor.shutdown()</code></a>,
+or a worker running <code>with Store.from_config(config)</code>.</p>
+<p>In v2, stores have an <code>owner</code> flag, and only the owner clears its connector
+when closed.</p>
+<ul>
+<li><code>Store(...)</code> is the owner by default (<code>owner=True</code>).</li>
+<li>Stores created implicitly are not owners. This covers stores created when
+  resolving a proxy, by <code>get_or_create_store()</code>, by stream consumers, by
+  lifetimes, and by <code>StoreExecutor</code> workers.</li>
+<li><a class="autorefs autorefs-internal" title="            from_config
+
+
+  
+      classmethod
+  " href="../api/store/base/#proxystore.store.base.Store.from_config"><code>Store.from_config(config)</code></a>
+  creates an owner only if the config has no ID (e.g., a config loaded from
+  a TOML file). A config with an ID came from an existing store, which is
+  the owner. Pass <code>owner=True</code> or <code>owner=False</code> to choose.</li>
+<li><a class="autorefs autorefs-internal" title="            close" href="../api/store/base/#proxystore.store.base.Store.close"><code>Store.close(*, clear=None)</code></a> replaces
+  <code>Store.close(*args, **kwargs)</code>. With <code>clear=None</code>, an owner uses the
+  connector's default and other stores never clear. Pass <code>clear=True</code> or
+  <code>clear=False</code> to override.</li>
+</ul>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="c1"># v1: forwarded to the connector's close()</span>
+</span><span id="__span-2-2"><a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a><span class="n">store</span><span class="o">.</span><span class="n">close</span><span class="p">(</span><span class="n">clear</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+</span><span id="__span-2-3"><a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a>
+</span><span id="__span-2-4"><a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a><span class="c1"># v2: clears only if this store is the owner and the connector clears by</span>
+</span><span id="__span-2-5"><a id="__codelineno-2-5" name="__codelineno-2-5" href="#__codelineno-2-5"></a><span class="c1"># default. Pass clear=False to never clear.</span>
+</span><span id="__span-2-6"><a id="__codelineno-2-6" name="__codelineno-2-6" href="#__codelineno-2-6"></a><span class="n">store</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+</span></code></pre></div>
+<h3 id="connector-options">Connector Options<a class="headerlink" href="#connector-options" title="Permanent link">&para;</a></h3>
+<p><a class="autorefs autorefs-internal" title="            Store" href="../api/store/base/#proxystore.store.base.Store"><code>Store</code></a> methods no longer forward arbitrary
+<code>**kwargs</code> to the connector. Pass connector-specific options (e.g.,
+<a class="autorefs autorefs-internal" title="            MultiConnector" href="../api/connectors/multi/#proxystore.connectors.multi.MultiConnector"><code>MultiConnector</code></a> tags) through
+<code>connector_options</code>.</p>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-3-1"><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a><span class="c1"># v1</span>
+</span><span id="__span-3-2"><a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a><span class="n">store</span><span class="o">.</span><span class="n">put</span><span class="p">(</span><span class="n">obj</span><span class="p">,</span> <span class="n">subset_tags</span><span class="o">=</span><span class="p">[</span><span class="s1">'local'</span><span class="p">])</span>
+</span><span id="__span-3-3"><a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a><span class="n">store</span><span class="o">.</span><span class="n">proxy</span><span class="p">(</span><span class="n">obj</span><span class="p">,</span> <span class="n">subset_tags</span><span class="o">=</span><span class="p">[</span><span class="s1">'local'</span><span class="p">])</span>
+</span><span id="__span-3-4"><a id="__codelineno-3-4" name="__codelineno-3-4" href="#__codelineno-3-4"></a>
+</span><span id="__span-3-5"><a id="__codelineno-3-5" name="__codelineno-3-5" href="#__codelineno-3-5"></a><span class="c1"># v2</span>
+</span><span id="__span-3-6"><a id="__codelineno-3-6" name="__codelineno-3-6" href="#__codelineno-3-6"></a><span class="n">store</span><span class="o">.</span><span class="n">put</span><span class="p">(</span><span class="n">obj</span><span class="p">,</span> <span class="n">connector_options</span><span class="o">=</span><span class="p">{</span><span class="s1">'subset_tags'</span><span class="p">:</span> <span class="p">[</span><span class="s1">'local'</span><span class="p">]})</span>
+</span><span id="__span-3-7"><a id="__codelineno-3-7" name="__codelineno-3-7" href="#__codelineno-3-7"></a><span class="n">store</span><span class="o">.</span><span class="n">proxy</span><span class="p">(</span><span class="n">obj</span><span class="p">,</span> <span class="n">connector_options</span><span class="o">=</span><span class="p">{</span><span class="s1">'subset_tags'</span><span class="p">:</span> <span class="p">[</span><span class="s1">'local'</span><span class="p">]})</span>
+</span></code></pre></div>
+<h3 id="one-serializer-per-store">One Serializer per Store<a class="headerlink" href="#one-serializer-per-store" title="Permanent link">&para;</a></h3>
+<p><a class="autorefs autorefs-internal" title="            Store" href="../api/store/base/#proxystore.store.base.Store"><code>Store</code></a> methods no longer take <code>serializer</code>
+or <code>deserializer</code> arguments. Every operation of a store, and every proxy it
+creates, uses the serializer and deserializer passed to the <code>Store</code>
+constructor.</p>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-4-1"><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a><span class="c1"># v1</span>
+</span><span id="__span-4-2"><a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a><span class="n">store</span><span class="o">.</span><span class="n">put</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">serializer</span><span class="o">=</span><span class="n">my_serialize</span><span class="p">)</span>
+</span><span id="__span-4-3"><a id="__codelineno-4-3" name="__codelineno-4-3" href="#__codelineno-4-3"></a><span class="n">obj</span> <span class="o">=</span> <span class="n">store</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="n">deserializer</span><span class="o">=</span><span class="n">my_deserialize</span><span class="p">)</span>
+</span><span id="__span-4-4"><a id="__codelineno-4-4" name="__codelineno-4-4" href="#__codelineno-4-4"></a>
+</span><span id="__span-4-5"><a id="__codelineno-4-5" name="__codelineno-4-5" href="#__codelineno-4-5"></a><span class="c1"># v2</span>
+</span><span id="__span-4-6"><a id="__codelineno-4-6" name="__codelineno-4-6" href="#__codelineno-4-6"></a><span class="n">store</span> <span class="o">=</span> <span class="n">Store</span><span class="p">(</span><span class="n">connector</span><span class="p">,</span> <span class="n">serializer</span><span class="o">=</span><span class="n">my_serialize</span><span class="p">,</span> <span class="n">deserializer</span><span class="o">=</span><span class="n">my_deserialize</span><span class="p">)</span>
+</span><span id="__span-4-7"><a id="__codelineno-4-7" name="__codelineno-4-7" href="#__codelineno-4-7"></a><span class="n">store</span><span class="o">.</span><span class="n">put</span><span class="p">(</span><span class="n">data</span><span class="p">)</span>
+</span><span id="__span-4-8"><a id="__codelineno-4-8" name="__codelineno-4-8" href="#__codelineno-4-8"></a><span class="n">obj</span> <span class="o">=</span> <span class="n">store</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">key</span><span class="p">)</span>
+</span></code></pre></div>
+<p>The arguments were removed from
+<a class="autorefs autorefs-internal" title="            put" href="../api/store/base/#proxystore.store.base.Store.put"><code>put()</code></a>,
+<a class="autorefs autorefs-internal" title="            put_batch" href="../api/store/base/#proxystore.store.base.Store.put_batch"><code>put_batch()</code></a>,
+<a class="autorefs autorefs-internal" title="            get" href="../api/store/base/#proxystore.store.base.Store.get"><code>get()</code></a>,
+<a class="autorefs autorefs-internal" title="            get_batch" href="../api/store/base/#proxystore.store.base.Store.get_batch"><code>get_batch()</code></a>,
+<a class="autorefs autorefs-internal" title="            proxy" href="../api/store/base/#proxystore.store.base.Store.proxy"><code>proxy()</code></a>,
+<a class="autorefs autorefs-internal" title="            proxy_batch" href="../api/store/base/#proxystore.store.base.Store.proxy_batch"><code>proxy_batch()</code></a>,
+<a class="autorefs autorefs-internal" title="            proxy_from_key" href="../api/store/base/#proxystore.store.base.Store.proxy_from_key"><code>proxy_from_key()</code></a>,
+<a class="autorefs autorefs-internal" title="            locked_proxy" href="../api/store/base/#proxystore.store.base.Store.locked_proxy"><code>locked_proxy()</code></a>,
+<a class="autorefs autorefs-internal" title="            owned_proxy" href="../api/store/base/#proxystore.store.base.Store.owned_proxy"><code>owned_proxy()</code></a>, and
+<a class="autorefs autorefs-internal" title="            future" href="../api/store/base/#proxystore.store.base.Store.future"><code>future()</code></a>, as well as from
+<a class="autorefs autorefs-internal" title="            StoreFactory" href="../api/store/factory/#proxystore.store.factory.StoreFactory"><code>StoreFactory</code></a>,
+<a class="autorefs autorefs-internal" title="            PollingStoreFactory" href="../api/store/factory/#proxystore.store.factory.PollingStoreFactory"><code>PollingStoreFactory</code></a>, and
+<a class="autorefs autorefs-internal" title="            update" href="../api/store/ref/#proxystore.store.ref.update"><code>update()</code></a>. Proxies also no longer carry a
+deserializer.</p>
+<ul>
+<li>To store some types in a custom format, handle those types in the store's
+  serializer and fall back to
+  <a class="autorefs autorefs-internal" title="            serialize" href="../api/serialize/#proxystore.serialize.serialize"><code>serialize()</code></a> for the rest (see
+  <a href="../concepts/store/">Store</a> for an example).</li>
+<li>To store data which is already serialized, use a store whose serializer
+  passes bytes through and set <code>populate_target=False</code>.</li>
+</ul>
+<h3 id="cache-size-in-bytes">Cache Size in Bytes<a class="headerlink" href="#cache-size-in-bytes" title="Permanent link">&para;</a></h3>
+<p><code>Store(cache_size=16)</code>, a limit on the number of cached objects, is replaced
+by <code>Store(cache_size_bytes=...)</code>, a limit on their total size. The default is
+256 MiB per store in each process. Objects larger than the limit are not
+cached. Passing <code>cache_size=</code> raises a <a class="autorefs autorefs-external" href="https://docs.python.org/3/builtins/exceptions.html#TypeError"><code>TypeError</code></a>, and a TOML
+config with <code>cache_size</code> fails to load.</p>
+<p>Each cache entry counts as the size of the object's serialized data, so with
+the default <code>cache_mode='objects'</code> the limit is an estimate of the memory
+used.</p>
+<h3 id="non-proxiable-objects">Non-Proxiable Objects<a class="headerlink" href="#non-proxiable-objects" title="Permanent link">&para;</a></h3>
+<p><a class="autorefs autorefs-internal" title="            proxy" href="../api/store/base/#proxystore.store.base.Store.proxy"><code>Store.proxy()</code></a> and
+<a class="autorefs autorefs-internal" title="            proxy_batch" href="../api/store/base/#proxystore.store.base.Store.proxy_batch"><code>Store.proxy_batch()</code></a> now default
+to <code>skip_nonproxiable=True</code>, matching
+<a class="autorefs autorefs-internal" title="            locked_proxy" href="../api/store/base/#proxystore.store.base.Store.locked_proxy"><code>locked_proxy()</code></a> and
+<a class="autorefs autorefs-internal" title="            owned_proxy" href="../api/store/base/#proxystore.store.base.Store.owned_proxy"><code>owned_proxy()</code></a>. Objects that
+cannot be proxied (e.g., <code>bool</code> and <code>None</code>) are returned as-is rather than
+raising
+<a class="autorefs autorefs-internal" title="            NonProxiableTypeError" href="../api/store/exceptions/#proxystore.store.exceptions.NonProxiableTypeError"><code>NonProxiableTypeError</code></a>.
+Pass <code>skip_nonproxiable=False</code> to keep the v1 behavior.</p>
+<h3 id="other-store-changes">Other Store Changes<a class="headerlink" href="#other-store-changes" title="Permanent link">&para;</a></h3>
+<ul>
+<li><strong>Immutable configs:</strong>
+  <a class="autorefs autorefs-internal" title="            StoreConfig" href="../api/store/config/#proxystore.store.config.StoreConfig"><code>StoreConfig</code></a> and
+  <a class="autorefs autorefs-internal" title="            ConnectorConfig" href="../api/store/config/#proxystore.store.config.ConnectorConfig"><code>ConnectorConfig</code></a> are frozen,
+  so setting a field raises a <code>ValidationError</code>. Use
+  <code>config.model_copy(update={...})</code> to make a changed copy.
+  <a class="autorefs autorefs-internal" title="            config" href="../api/store/base/#proxystore.store.base.Store.config"><code>Store.config()</code></a> is made when the
+  store is created and returns the same object each time.</li>
+<li><strong>Read-only attributes:</strong>
+  <a class="autorefs autorefs-internal" title="            connector
+
+
+  
+      property
+  " href="../api/store/base/#proxystore.store.base.Store.connector"><code>Store.connector</code></a> and
+  <a class="autorefs autorefs-internal" title="            cache
+
+
+  
+      property
+  " href="../api/store/base/#proxystore.store.base.Store.cache"><code>Store.cache</code></a> are read-only
+  properties, so a store's connector cannot be replaced after it is created.</li>
+<li><strong>Exceptions:</strong>
+  <a class="autorefs autorefs-internal" title="            ProxyResolveMissingKeyError" href="../api/store/exceptions/#proxystore.store.exceptions.ProxyResolveMissingKeyError"><code>ProxyResolveMissingKeyError</code></a>
+  and
+  <a class="autorefs autorefs-internal" title="            NonProxiableTypeError" href="../api/store/exceptions/#proxystore.store.exceptions.NonProxiableTypeError"><code>NonProxiableTypeError</code></a>
+  now subclass <a class="autorefs autorefs-internal" title="            StoreError" href="../api/store/exceptions/#proxystore.store.exceptions.StoreError"><code>StoreError</code></a>. If
+  you catch <code>StoreError</code> before these, check that your handlers still behave
+  as intended.</li>
+<li><strong>Metrics:</strong> Factory resolve times in
+  <a class="autorefs autorefs-internal" title="            StoreMetrics" href="../api/store/metrics/#proxystore.store.metrics.StoreMetrics"><code>StoreMetrics</code></a> were recorded in
+  nanoseconds in v1 despite being documented as milliseconds. They are now
+  in milliseconds.</li>
+<li><strong>New <code>Store.get_batch()</code>:</strong>
+  <a class="autorefs autorefs-internal" title="            get_batch" href="../api/store/base/#proxystore.store.base.Store.get_batch"><code>Store.get_batch()</code></a> returns
+  objects from the cache and fetches the rest in a single
+  <a class="autorefs autorefs-internal" title="            get_batch" href="../api/connectors/protocols/#proxystore.connectors.protocols.Connector.get_batch"><code>Connector.get_batch()</code></a>
+  call.</li>
+</ul>
+<h2 id="connectors">Connectors<a class="headerlink" href="#connectors" title="Permanent link">&para;</a></h2>
+<h3 id="moved-from-proxystore-ex">Moved from <code>proxystore-ex</code><a class="headerlink" href="#moved-from-proxystore-ex" title="Permanent link">&para;</a></h3>
+<table>
+<thead>
+<tr>
+<th>v1</th>
+<th>v2</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>proxystore.ex.connectors.daos.DAOSConnector</code></td>
+<td><a class="autorefs autorefs-internal" title="            DAOSConnector" href="../api/connectors/daos/#proxystore.connectors.daos.DAOSConnector"><code>proxystore.connectors.daos.DAOSConnector</code></a></td>
+</tr>
+<tr>
+<td><code>proxystore.ex.connectors.dim.zmq.ZeroMQConnector</code></td>
+<td><a class="autorefs autorefs-internal" title="            ZeroMQConnector" href="../api/connectors/zmq/#proxystore.connectors.zmq.ZeroMQConnector"><code>proxystore.connectors.zmq.ZeroMQConnector</code></a> (install the <code>zmq</code> extra)</td>
+</tr>
+</tbody>
+</table>
+<p><code>proxystore.connectors.dim</code>, which only contained a deprecation notice, was
+removed. The other connectors in <code>proxystore-ex</code> were not ported.</p>
+<p><code>ZeroMQConnector.close(kill_server=...)</code> is replaced by the standard
+<a class="autorefs autorefs-internal" title="            close" href="../api/connectors/zmq/#proxystore.connectors.zmq.ZeroMQConnector.close"><code>close(clear=...)</code></a> and a
+<code>clear</code> constructor option. Config shortcuts like
+<code>ConnectorConfig(kind='zmq')</code> and <code>kind='daos'</code> now work.</p>
+<h3 id="behavior-changes">Behavior Changes<a class="headerlink" href="#behavior-changes" title="Permanent link">&para;</a></h3>
+<ul>
+<li><a class="autorefs autorefs-internal" title="            FileConnector" href="../api/connectors/file/#proxystore.connectors.file.FileConnector"><code>FileConnector</code></a> creates
+  <code>store_dir</code> and its files so only you can access them (<code>dir_mode=0o700</code>,
+  <code>file_mode=0o600</code>), regardless of your umask. Pass
+  <code>dir_mode=0o770, file_mode=0o660</code> to share objects with a group. An
+  existing <code>store_dir</code> keeps its permissions.</li>
+<li><code>FileConnector</code> writes each object to a hidden temporary file and renames
+  it, instead of writing a <code>.ready</code> marker file next to each object, so v2
+  cannot read a directory written by v1.</li>
+<li>Stores using a
+  <a class="autorefs autorefs-internal" title="            MultiConnector" href="../api/connectors/multi/#proxystore.connectors.multi.MultiConnector"><code>MultiConnector</code></a> can now be
+  created from their config, so proxies of objects in a <code>MultiConnector</code>
+  resolve in other processes.</li>
+<li><code>FileConnector(store_dir=...)</code>, <code>EndpointConnector(proxystore_dir=...)</code>,
+  and <a class="autorefs autorefs-internal" title="            GlobusEndpoint" href="../api/connectors/globus/#proxystore.connectors.globus.GlobusEndpoint"><code>GlobusEndpoint(local_path=...)</code></a>
+  accept <a class="autorefs autorefs-external" href="https://docs.python.org/3/library/os.html#os.PathLike"><code>os.PathLike</code></a> in addition to <code>str</code>.</li>
+<li>The <code>EndpointConnector</code> changed substantially (see
+  <a href="#endpointconnector"><code>EndpointConnector</code></a>).</li>
+</ul>
+<h3 id="custom-connectors">Custom Connectors<a class="headerlink" href="#custom-connectors" title="Permanent link">&para;</a></h3>
+<p>If you implement your own connector, update it to the v2
+<a class="autorefs autorefs-internal" title="            Connector" href="../api/connectors/protocols/#proxystore.connectors.protocols.Connector"><code>Connector</code></a> protocol:</p>
+<ul>
+<li><a class="autorefs autorefs-internal" title="            close" href="../api/connectors/protocols/#proxystore.connectors.protocols.Connector.close"><code>close()</code></a> must accept a
+  keyword-only <code>clear</code> argument:
+  <code>def close(self, *, clear: bool | None = None) -&gt; None</code>. <code>None</code> means use
+  the connector's default. Connectors without persistent state can ignore it.</li>
+<li><a class="autorefs autorefs-internal" title="            from_config
+
+
+  
+      classmethod
+  " href="../api/connectors/protocols/#proxystore.connectors.protocols.Connector.from_config"><code>from_config()</code></a>
+  should return <code>Self</code>. <code>Store.from_config()</code> now calls
+  <code>Connector.from_config()</code> instead of passing the options to the
+  constructor, so this method is now used.</li>
+<li>Connectors must be thread-safe. In v1, <code>Store</code> only called its connector
+  from one thread at a time. In v2, it may call one connector from multiple
+  threads at the same time, including with the same key. If your connector
+  uses a client which is not thread-safe, guard the client with a lock.</li>
+<li>Options passed to <code>Store</code> methods via <code>connector_options</code> are forwarded to
+  <a class="autorefs autorefs-internal" title="            put" href="../api/connectors/protocols/#proxystore.connectors.protocols.Connector.put"><code>put()</code></a> and
+  <a class="autorefs autorefs-internal" title="            put_batch" href="../api/connectors/protocols/#proxystore.connectors.protocols.Connector.put_batch"><code>put_batch()</code></a> as
+  keyword arguments.</li>
+<li><a class="autorefs autorefs-internal" title="            DeferrableConnector" href="../api/connectors/protocols/#proxystore.connectors.protocols.DeferrableConnector"><code>DeferrableConnector</code></a>
+  now extends <code>Connector</code>, and
+  <a class="autorefs autorefs-internal" title="            new_key" href="../api/connectors/protocols/#proxystore.connectors.protocols.DeferrableConnector.new_key"><code>new_key()</code></a>
+  accepts any <code>BytesLike</code> (not only <code>bytes</code>).</li>
+</ul>
+<h2 id="proxies">Proxies<a class="headerlink" href="#proxies" title="Permanent link">&para;</a></h2>
+<p><strong><code>proxystore.factory</code> was removed.</strong> <code>Factory</code>, <code>SimpleFactory</code>, and
+<code>LambdaFactory</code> were unused by ProxyStore.
+<a class="autorefs autorefs-internal" title="            Proxy" href="../api/proxy/#proxystore.proxy.Proxy"><code>Proxy</code></a> accepts any callable as its factory, such
+as a <a class="autorefs autorefs-external" href="https://docs.python.org/3/library/functools.html#functools.partial"><code>functools.partial</code></a>.</p>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-5-1"><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a><span class="c1"># v1</span>
+</span><span id="__span-5-2"><a id="__codelineno-5-2" name="__codelineno-5-2" href="#__codelineno-5-2"></a><span class="kn">from</span><span class="w"> </span><span class="nn">proxystore.factory</span><span class="w"> </span><span class="kn">import</span> <span class="n">LambdaFactory</span>
+</span><span id="__span-5-3"><a id="__codelineno-5-3" name="__codelineno-5-3" href="#__codelineno-5-3"></a>
+</span><span id="__span-5-4"><a id="__codelineno-5-4" name="__codelineno-5-4" href="#__codelineno-5-4"></a><span class="n">proxy</span> <span class="o">=</span> <span class="n">Proxy</span><span class="p">(</span><span class="n">LambdaFactory</span><span class="p">(</span><span class="n">load</span><span class="p">,</span> <span class="n">path</span><span class="p">))</span>
+</span><span id="__span-5-5"><a id="__codelineno-5-5" name="__codelineno-5-5" href="#__codelineno-5-5"></a>
+</span><span id="__span-5-6"><a id="__codelineno-5-6" name="__codelineno-5-6" href="#__codelineno-5-6"></a><span class="c1"># v2</span>
+</span><span id="__span-5-7"><a id="__codelineno-5-7" name="__codelineno-5-7" href="#__codelineno-5-7"></a><span class="kn">import</span><span class="w"> </span><span class="nn">functools</span>
+</span><span id="__span-5-8"><a id="__codelineno-5-8" name="__codelineno-5-8" href="#__codelineno-5-8"></a>
+</span><span id="__span-5-9"><a id="__codelineno-5-9" name="__codelineno-5-9" href="#__codelineno-5-9"></a><span class="n">proxy</span> <span class="o">=</span> <span class="n">Proxy</span><span class="p">(</span><span class="n">functools</span><span class="o">.</span><span class="n">partial</span><span class="p">(</span><span class="n">load</span><span class="p">,</span> <span class="n">path</span><span class="p">))</span>
+</span></code></pre></div>
+<p>Other changes which need no action:</p>
+<ul>
+<li>Proxies now support <a class="autorefs autorefs-external" href="https://docs.python.org/3/builtins/functions.html#round"><code>round(proxy, ndigits)</code></a>,
+  <a class="autorefs autorefs-external" href="https://docs.python.org/3/library/math.html#math.trunc"><code>math.trunc()</code></a>, <a class="autorefs autorefs-external" href="https://docs.python.org/3/library/math.html#math.floor"><code>math.floor()</code></a>, and
+  <a class="autorefs autorefs-external" href="https://docs.python.org/3/library/math.html#math.ceil"><code>math.ceil()</code></a>. In v1, <code>math.floor()</code> and <code>math.ceil()</code>
+  converted the target to a <code>float</code> and lost precision for large ints.</li>
+<li>Deserialization reads data in place, avoiding a copy of the received
+  buffer.</li>
+<li><a class="autorefs autorefs-internal" href="../api/serialize/#proxystore.serialize"><code>proxystore.serialize</code></a> no longer imports <code>numpy</code>,
+  <code>pandas</code>, or <code>polars</code> eagerly, which reduces its import time from ~230 ms
+  to ~30 ms.</li>
+</ul>
+<h2 id="streaming">Streaming<a class="headerlink" href="#streaming" title="Permanent link">&para;</a></h2>
+<p>Streaming (<a class="autorefs autorefs-internal" href="../api/stream/#proxystore.stream"><code>proxystore.stream</code></a>), reference ownership,
+and proxy futures are now stable. Importing <code>proxystore.stream</code> no longer
+emits an <a class="autorefs autorefs-internal" title="            ExperimentalWarning" href="../api/warnings/#proxystore.warnings.ExperimentalWarning"><code>ExperimentalWarning</code></a>,
+so you can remove any warning filters for it.</p>
+<h3 id="stream-filters">Stream Filters<a class="headerlink" href="#stream-filters" title="Permanent link">&para;</a></h3>
+<p>Filters now return <code>True</code> to <strong>keep</strong> an event, like Python's builtin
+<a class="autorefs autorefs-external" href="https://docs.python.org/3/builtins/functions.html#filter"><code>filter()</code></a>. In v1, <code>True</code> meant <em>drop</em>. The parameter was renamed
+from <code>filter_</code> to <code>keep</code> so code that is not updated fails loudly instead of
+silently inverting.</p>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-6-1"><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a><span class="c1"># v1: drop events whose metadata has `skip=True`</span>
+</span><span id="__span-6-2"><a id="__codelineno-6-2" name="__codelineno-6-2" href="#__codelineno-6-2"></a><span class="n">consumer</span> <span class="o">=</span> <span class="n">StreamConsumer</span><span class="p">(</span><span class="n">subscriber</span><span class="p">,</span> <span class="n">filter_</span><span class="o">=</span><span class="k">lambda</span> <span class="n">m</span><span class="p">:</span> <span class="n">m</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">'skip'</span><span class="p">,</span> <span class="kc">False</span><span class="p">))</span>
+</span><span id="__span-6-3"><a id="__codelineno-6-3" name="__codelineno-6-3" href="#__codelineno-6-3"></a>
+</span><span id="__span-6-4"><a id="__codelineno-6-4" name="__codelineno-6-4" href="#__codelineno-6-4"></a><span class="c1"># v2: keep events whose metadata does not have `skip=True`</span>
+</span><span id="__span-6-5"><a id="__codelineno-6-5" name="__codelineno-6-5" href="#__codelineno-6-5"></a><span class="n">consumer</span> <span class="o">=</span> <span class="n">StreamConsumer</span><span class="p">(</span><span class="n">subscriber</span><span class="p">,</span> <span class="n">keep</span><span class="o">=</span><span class="k">lambda</span> <span class="n">m</span><span class="p">:</span> <span class="ow">not</span> <span class="n">m</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">'skip'</span><span class="p">,</span> <span class="kc">False</span><span class="p">))</span>
+</span></code></pre></div>
+<p><a class="autorefs autorefs-internal" title="            SamplingFilter" href="../api/stream/filters/#proxystore.stream.filters.SamplingFilter"><code>SamplingFilter(p)</code></a> now keeps
+each event with probability <code>p</code> (in v1, <code>p</code> was the probability of
+dropping). Replace <code>SamplingFilter(p)</code> with <code>SamplingFilter(1 - p)</code> to keep
+the v1 behavior.</p>
+<h3 id="stream-fixes">Stream Fixes<a class="headerlink" href="#stream-fixes" title="Permanent link">&para;</a></h3>
+<ul>
+<li><a class="autorefs autorefs-internal" title="            StreamConsumer" href="../api/stream/#proxystore.stream.StreamConsumer"><code>StreamConsumer</code></a> caches stores by
+  store ID instead of by topic. In v1, all events in a topic were resolved
+  with the first store seen for that topic, so events from producers using
+  different stores failed to resolve.</li>
+<li>Streaming <code>None</code> with a store now works instead of raising
+  <a class="autorefs autorefs-external" href="https://docs.python.org/3/builtins/exceptions.html#ValueError"><code>ValueError</code></a>.</li>
+<li>A closed topic sends one end-of-stream event rather than one per flush.</li>
+</ul>
+<h2 id="proxy-futures">Proxy Futures<a class="headerlink" href="#proxy-futures" title="Permanent link">&para;</a></h2>
+<p><code>Future</code> was renamed to
+<a class="autorefs autorefs-internal" title="            ProxyFuture" href="../api/store/future/#proxystore.store.future.ProxyFuture"><code>ProxyFuture</code></a> to avoid confusion with
+<a class="autorefs autorefs-external" href="https://docs.python.org/3/library/concurrent.futures.html#concurrent.futures.Future"><code>concurrent.futures.Future</code></a>, and
+<a class="autorefs autorefs-internal" title="            future" href="../api/store/base/#proxystore.store.base.Store.future"><code>Store.future()</code></a> takes a
+<a class="autorefs autorefs-internal" title="            PollingPolicy
+
+
+  
+      dataclass
+  " href="../api/store/future/#proxystore.store.future.PollingPolicy"><code>PollingPolicy</code></a> instead of four
+<code>polling_*</code> arguments.</p>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-7-1"><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a><span class="c1"># v1</span>
+</span><span id="__span-7-2"><a id="__codelineno-7-2" name="__codelineno-7-2" href="#__codelineno-7-2"></a><span class="kn">from</span><span class="w"> </span><span class="nn">proxystore.store.future</span><span class="w"> </span><span class="kn">import</span> <span class="n">Future</span>
+</span><span id="__span-7-3"><a id="__codelineno-7-3" name="__codelineno-7-3" href="#__codelineno-7-3"></a>
+</span><span id="__span-7-4"><a id="__codelineno-7-4" name="__codelineno-7-4" href="#__codelineno-7-4"></a><span class="n">future</span> <span class="o">=</span> <span class="n">store</span><span class="o">.</span><span class="n">future</span><span class="p">(</span><span class="n">polling_interval</span><span class="o">=</span><span class="mf">0.1</span><span class="p">,</span> <span class="n">polling_timeout</span><span class="o">=</span><span class="mi">10</span><span class="p">)</span>
+</span><span id="__span-7-5"><a id="__codelineno-7-5" name="__codelineno-7-5" href="#__codelineno-7-5"></a>
+</span><span id="__span-7-6"><a id="__codelineno-7-6" name="__codelineno-7-6" href="#__codelineno-7-6"></a><span class="c1"># v2</span>
+</span><span id="__span-7-7"><a id="__codelineno-7-7" name="__codelineno-7-7" href="#__codelineno-7-7"></a><span class="kn">from</span><span class="w"> </span><span class="nn">proxystore.store.future</span><span class="w"> </span><span class="kn">import</span> <span class="n">PollingPolicy</span><span class="p">,</span> <span class="n">ProxyFuture</span>
+</span><span id="__span-7-8"><a id="__codelineno-7-8" name="__codelineno-7-8" href="#__codelineno-7-8"></a>
+</span><span id="__span-7-9"><a id="__codelineno-7-9" name="__codelineno-7-9" href="#__codelineno-7-9"></a><span class="n">future</span> <span class="o">=</span> <span class="n">store</span><span class="o">.</span><span class="n">future</span><span class="p">(</span><span class="n">polling</span><span class="o">=</span><span class="n">PollingPolicy</span><span class="p">(</span><span class="n">interval</span><span class="o">=</span><span class="mf">0.1</span><span class="p">,</span> <span class="n">timeout</span><span class="o">=</span><span class="mi">10</span><span class="p">))</span>
+</span></code></pre></div>
+<table>
+<thead>
+<tr>
+<th>v1 argument</th>
+<th><code>PollingPolicy</code> field</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>polling_interval</code></td>
+<td><code>interval</code></td>
+</tr>
+<tr>
+<td><code>polling_backoff_factor</code></td>
+<td><code>backoff_factor</code></td>
+</tr>
+<tr>
+<td><code>polling_interval_limit</code></td>
+<td><code>interval_limit</code></td>
+</tr>
+<tr>
+<td><code>polling_timeout</code></td>
+<td><code>timeout</code></td>
+</tr>
+</tbody>
+</table>
+<p><code>ProxyFuture</code> also adds:</p>
+<ul>
+<li><a class="autorefs autorefs-internal" title="            result" href="../api/store/future/#proxystore.store.future.ProxyFuture.result"><code>result(timeout=...)</code></a>,
+  which raises <a class="autorefs autorefs-external" href="https://docs.python.org/3/builtins/exceptions.html#TimeoutError"><code>TimeoutError</code></a>.</li>
+<li><a class="autorefs autorefs-internal" title="            set_exception" href="../api/store/future/#proxystore.store.future.ProxyFuture.set_exception"><code>set_exception()</code></a>,
+  which passes a producer's failure to <code>result()</code> and to the future's proxy.
+  The exception is stored as the result of the future using the store's
+  serializer, so any result which is an exception is raised the same way.</li>
+</ul>
+<h2 id="reference-ownership">Reference Ownership<a class="headerlink" href="#reference-ownership" title="Permanent link">&para;</a></h2>
+<p>These changes affect <a class="autorefs autorefs-internal" href="../api/store/ref/#proxystore.store.ref"><code>proxystore.store.ref</code></a>,
+<a class="autorefs autorefs-internal" href="../api/store/scopes/#proxystore.store.scopes"><code>proxystore.store.scopes</code></a>, and the
+<a class="autorefs autorefs-internal" title="            StoreExecutor" href="../api/store/executor/#proxystore.store.executor.StoreExecutor"><code>StoreExecutor</code></a>.</p>
+<ul>
+<li><strong>Pickling an <code>OwnedProxy</code> more than once raises an error.</strong> Pickling an
+  <a class="autorefs autorefs-internal" title="            OwnedProxy" href="../api/store/ref/#proxystore.store.ref.OwnedProxy"><code>OwnedProxy</code></a> that was already pickled
+  raises
+  <a class="autorefs autorefs-internal" title="            ReferenceInvalidError" href="../api/store/ref/#proxystore.store.ref.ReferenceInvalidError"><code>ReferenceInvalidError</code></a>, and
+  pickling one that is borrowed raises
+  <a class="autorefs autorefs-internal" title="            ReferenceBorrowedError" href="../api/store/ref/#proxystore.store.ref.ReferenceBorrowedError"><code>ReferenceBorrowedError</code></a>.
+  In v1, both worked but made two owners or left borrows pointing at an
+  object the new owner could evict. Pass a
+  <a class="autorefs autorefs-internal" title="            borrow" href="../api/store/ref/#proxystore.store.ref.borrow"><code>borrow()</code></a>, a
+  <a class="autorefs autorefs-internal" title="            clone" href="../api/store/ref/#proxystore.store.ref.clone"><code>clone()</code></a>, or a plain <code>Proxy</code> to frameworks
+  that pickle arguments more than once (e.g., to retry tasks).</li>
+<li><strong>Deleting an <code>OwnedProxy</code> evicts its object shortly after.</strong> The object
+  is evicted in a background thread, instead of before <code>del</code> returns,
+  because evicting inside the garbage collector could deadlock.
+  <code>Store.close()</code> and program exit wait for pending evictions. Code that
+  checks <a class="autorefs autorefs-internal" title="            exists" href="../api/store/base/#proxystore.store.base.Store.exists"><code>store.exists(key)</code></a> right
+  after deleting an owned proxy may see the object for a moment longer.</li>
+<li><strong><code>clone()</code> copies through the store.</strong>
+  <a class="autorefs autorefs-internal" title="            clone" href="../api/store/ref/#proxystore.store.ref.clone"><code>clone()</code></a> copies the stored object through
+  the store and returns a clone which is not resolved, even if the original
+  is. In v1, the clone was given a deep copy of the original's local target,
+  which could differ from the clone's stored copy. <code>clone()</code> raises
+  <a class="autorefs autorefs-internal" title="            ProxyResolveMissingKeyError" href="../api/store/exceptions/#proxystore.store.exceptions.ProxyResolveMissingKeyError"><code>ProxyResolveMissingKeyError</code></a>
+  if the object is missing and
+  <a class="autorefs autorefs-internal" title="            MutableBorrowError" href="../api/store/ref/#proxystore.store.ref.MutableBorrowError"><code>MutableBorrowError</code></a> if the
+  proxy is mutably borrowed.</li>
+<li><a class="autorefs autorefs-internal" title="            map" href="../api/store/executor/#proxystore.store.executor.StoreExecutor.map"><code>StoreExecutor.map()</code></a>
+  applies <code>should_proxy</code> to each element, like
+  <a class="autorefs autorefs-internal" title="            submit" href="../api/store/executor/#proxystore.store.executor.StoreExecutor.submit"><code>submit()</code></a>, rather than
+  to each iterable.</li>
+<li>References pickled by <a class="autorefs autorefs-internal" title="            submit" href="../api/store/scopes/#proxystore.store.scopes.submit"><code>scopes.submit()</code></a>
+  are now released correctly. In v1, the owner's borrow count was never
+  decremented for refs sent to a worker process.</li>
+<li><a class="autorefs autorefs-internal" title="            LeaseLifetime" href="../api/store/lifetimes/#proxystore.store.lifetimes.LeaseLifetime"><code>LeaseLifetime</code></a> no longer
+  blocks interpreter exit until the lease expires.</li>
+</ul>
+<h2 id="endpoints">Endpoints<a class="headerlink" href="#endpoints" title="Permanent link">&para;</a></h2>
+<div class="admonition warning">
+<p class="admonition-title">Stop endpoints before upgrading</p>
+<p>v2 cannot see endpoints started by v1, so it cannot stop them. Stop
+running endpoints with <code>proxystore-endpoint stop &lt;name&gt;</code> <strong>before</strong>
+upgrading.</p>
+</div>
+<p>ProxyStore Endpoints were rebuilt, so endpoints configured with v1 must be
+stopped before upgrading and then configured again. The commands are below,
+and the <a href="../guides/endpoints/#upgrading-from-proxystore-v1">Endpoints Guide</a>
+explains each step.</p>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-8-1"><a id="__codelineno-8-1" name="__codelineno-8-1" href="#__codelineno-8-1"></a><span class="c1"># 1. With ProxyStore v1 still installed</span>
+</span><span id="__span-8-2"><a id="__codelineno-8-2" name="__codelineno-8-2" href="#__codelineno-8-2"></a>proxystore-endpoint<span class="w"> </span>stop<span class="w"> </span>my-endpoint
+</span><span id="__span-8-3"><a id="__codelineno-8-3" name="__codelineno-8-3" href="#__codelineno-8-3"></a>
+</span><span id="__span-8-4"><a id="__codelineno-8-4" name="__codelineno-8-4" href="#__codelineno-8-4"></a><span class="c1"># 2. Upgrade ProxyStore, then configure the endpoint again</span>
+</span><span id="__span-8-5"><a id="__codelineno-8-5" name="__codelineno-8-5" href="#__codelineno-8-5"></a>proxystore-endpoint<span class="w"> </span>remove<span class="w"> </span>my-endpoint
+</span><span id="__span-8-6"><a id="__codelineno-8-6" name="__codelineno-8-6" href="#__codelineno-8-6"></a>proxystore-endpoint<span class="w"> </span>configure<span class="w"> </span>my-endpoint
+</span><span id="__span-8-7"><a id="__codelineno-8-7" name="__codelineno-8-7" href="#__codelineno-8-7"></a>proxystore-endpoint<span class="w"> </span>peers<span class="w"> </span>add<span class="w"> </span>my-endpoint<span class="w"> </span>&lt;peer-name&gt;<span class="w"> </span>&lt;peer-id&gt;
+</span><span id="__span-8-8"><a id="__codelineno-8-8" name="__codelineno-8-8" href="#__codelineno-8-8"></a>proxystore-endpoint<span class="w"> </span>start<span class="w"> </span>my-endpoint
+</span></code></pre></div>
+<p>If you already upgraded, v2 cannot see the v1 endpoint's <code>daemon.pid</code> file,
+so stop the old endpoint with <code>kill $(cat &lt;endpoint-dir&gt;/daemon.pid)</code>.</p>
+<h3 id="what-changed">What Changed<a class="headerlink" href="#what-changed" title="Permanent link">&para;</a></h3>
+<ul>
+<li><strong>Clients talk to endpoints over an authenticated TCP protocol</strong> instead of
+  an unauthenticated HTTP API. In v1, anyone who could reach an endpoint's
+  port could get, set, or evict objects. Clients now authenticate with a
+  token stored in the endpoint directory, which only its owner can read.
+  Connections between clients and endpoints use TLS by default (turn it off
+  with <code>configure --no-tls</code>). Clients and endpoints from different major
+  versions cannot talk to each other and raise a clear error in both
+  directions.</li>
+<li><strong>Peering uses <a href="https://iroh.computer" target="_blank">iroh</a> instead of
+  WebRTC and the ProxyStore relay server.</strong> The <code>proxystore-relay</code> CLI was
+  removed. v1 and v2 endpoints cannot peer with each other, so upgrade
+  endpoints that peer with each other together. By default, endpoints use
+  n0's public relays and discovery service, which are third-party services.
+  Use <code>configure --relays</code> and <code>--discovery</code> to disable them or to use
+  self-hosted relays.</li>
+<li><strong>The ProxyStore relay server is no longer used.</strong> v2 endpoints do not use
+  the relay server hosted by the ProxyStore team. That relay server will
+  stay online for at least six months after the release of v2.0.0 so v1
+  endpoints keep working while you move between versions.</li>
+<li><strong>Endpoints are identified by an endpoint ID</strong> (an ed25519 public key)
+  instead of a UUID. Get the ID with <code>proxystore-endpoint id &lt;name&gt;</code>.</li>
+<li><strong>Peers must be allowed explicitly.</strong> Each endpoint has an allowlist of
+  peer IDs in <code>peers.toml</code>, managed with
+  <code>proxystore-endpoint peers add|remove|list</code>.</li>
+</ul>
+<h3 id="endpointconnector"><code>EndpointConnector</code><a class="headerlink" href="#endpointconnector" title="Permanent link">&para;</a></h3>
+<p>These changes affect the
+<a class="autorefs autorefs-internal" title="            EndpointConnector" href="../api/connectors/endpoint/#proxystore.connectors.endpoint.EndpointConnector"><code>EndpointConnector</code></a>.</p>
+<ul>
+<li><code>endpoints</code> is a list of endpoint IDs instead of UUIDs. Update any UUIDs in
+  your code or configs.</li>
+<li><code>endpoints</code> is now optional. If omitted, the connector uses a running
+  endpoint in the ProxyStore home directory.</li>
+<li>A new <code>reconnect_timeout</code> option controls how long the connector retries
+  connecting to a restarting endpoint.</li>
+<li>The connector is thread-safe and fork-safe.</li>
+</ul>
+<h3 id="cli-changes">CLI Changes<a class="headerlink" href="#cli-changes" title="Permanent link">&para;</a></h3>
+<table>
+<thead>
+<tr>
+<th>v1</th>
+<th>v2</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>proxystore-endpoint configure --relay-address/--relay-auth/--relay-server/--peer-channels</code></td>
+<td><code>--peering/--no-peering</code>, <code>--relays</code>, <code>--discovery</code>, <code>--tls/--no-tls</code></td>
+</tr>
+<tr>
+<td><code>proxystore-endpoint check-nat</code></td>
+<td>Removed.</td>
+</tr>
+<tr>
+<td><code>proxystore-endpoint test --remote UUID &lt;cmd&gt;</code></td>
+<td><code>proxystore-endpoint client --target ID &lt;cmd&gt;</code></td>
+</tr>
+<tr>
+<td></td>
+<td>New: <code>id</code>, <code>peers add/remove/list</code>, <code>client ping</code></td>
+</tr>
+<tr>
+<td><code>proxystore-relay</code></td>
+<td>Removed.</td>
+</tr>
+</tbody>
+</table>
+<p>See the <a href="../api/cli/#proxystore-endpoint">CLI Reference</a> for all commands.</p>
+<h3 id="python-api">Python API<a class="headerlink" href="#python-api" title="Permanent link">&para;</a></h3>
+<p>The <a class="autorefs autorefs-internal" href="../api/endpoint/#proxystore.endpoint"><code>proxystore.endpoint</code></a> Python API is now
+internal. Use endpoints through the <code>proxystore-endpoint</code> CLI and the
+<a class="autorefs autorefs-internal" title="            EndpointConnector" href="../api/connectors/endpoint/#proxystore.connectors.endpoint.EndpointConnector"><code>EndpointConnector</code></a>.</p>
+<ul>
+<li><code>proxystore.p2p</code> was removed (peering now lives in internal endpoint
+  modules).</li>
+<li>Endpoint exceptions now share an
+  <a class="autorefs autorefs-internal" title="            EndpointError" href="../api/endpoint/exceptions/#proxystore.endpoint.exceptions.EndpointError"><code>EndpointError</code></a> base
+  class.</li>
+<li><code>EndpointVersionWarning</code> was replaced by
+  <a class="autorefs autorefs-internal" title="            VersionMismatchWarning" href="../api/warnings/#proxystore.warnings.VersionMismatchWarning"><code>VersionMismatchWarning</code></a>.</li>
+</ul>
+<h2 id="removed-modules-and-apis">Removed Modules and APIs<a class="headerlink" href="#removed-modules-and-apis" title="Permanent link">&para;</a></h2>
+<table>
+<thead>
+<tr>
+<th>Removed</th>
+<th>Replacement</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>proxystore.ex</code></td>
+<td><a class="autorefs autorefs-internal" href="../api/connectors/daos/#proxystore.connectors.daos"><code>proxystore.connectors.daos</code></a>, <a class="autorefs autorefs-internal" href="../api/connectors/zmq/#proxystore.connectors.zmq"><code>proxystore.connectors.zmq</code></a></td>
+</tr>
+<tr>
+<td><code>proxystore.connectors.dim</code></td>
+<td><a class="autorefs autorefs-internal" href="../api/connectors/zmq/#proxystore.connectors.zmq"><code>proxystore.connectors.zmq</code></a></td>
+</tr>
+<tr>
+<td><code>proxystore.factory</code></td>
+<td>Any callable, e.g., <a class="autorefs autorefs-external" href="https://docs.python.org/3/library/functools.html#functools.partial"><code>functools.partial</code></a></td>
+</tr>
+<tr>
+<td><code>proxystore.p2p</code></td>
+<td>None (internal to endpoints)</td>
+</tr>
+<tr>
+<td><code>proxystore-relay</code> CLI</td>
+<td>None</td>
+</tr>
+<tr>
+<td><code>proxystore.store.future.Future</code></td>
+<td><a class="autorefs autorefs-internal" title="            ProxyFuture" href="../api/store/future/#proxystore.store.future.ProxyFuture"><code>proxystore.store.future.ProxyFuture</code></a></td>
+</tr>
+<tr>
+<td>Name-based store registration</td>
+<td>See <a href="#removed-registration-api">Removed Registration API</a></td>
+</tr>
+</tbody>
+</table>
+<p>The following modules still exist but are now internal and may change in
+any release (see <a href="../versioning/#public-api">Public API</a>):
+<a class="autorefs autorefs-internal" href="../api/utils/#proxystore.utils"><code>proxystore.utils</code></a>,
+<a class="autorefs autorefs-internal" href="../api/globus/#proxystore.globus"><code>proxystore.globus</code></a> (except the
+<code>proxystore-globus-auth</code> CLI),
+<a class="autorefs autorefs-internal" href="../api/store/cache/#proxystore.store.cache"><code>proxystore.store.cache</code></a>,
+<a class="autorefs autorefs-internal" href="../api/endpoint/#proxystore.endpoint"><code>proxystore.endpoint</code></a>, and the server helpers in
+<a class="autorefs autorefs-internal" href="../api/connectors/zmq/#proxystore.connectors.zmq"><code>proxystore.connectors.zmq</code></a>.</p>
+
+
+
+
+
+
+
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+          <button type="button" class="md-top md-icon" data-md-component="top" hidden>
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M13 20h-2V8l-5.5 5.5-1.42-1.42L12 4.16l7.92 7.92-1.42 1.42L13 8z"/></svg>
+  Back to top
+</button>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+    <div class="md-copyright__highlight">
+      Copyright &copy; 2021—Present by <a target="_blank" href="https://gregpauloski.com">Greg Pauloski</a> and <a target="_blank" href="https://labs.globus.org">Globus Labs</a>
+    </div>
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    
+    
+      
+      
+      <script id="__config" type="application/json">{"annotate": null, "base": "..", "features": ["content.code.annotate", "content.code.copy", "content.code.select", "navigation.path", "navigation.sections", "navigation.tabs", "navigation.top", "navigation.tracking", "search.highlight", "search.share", "search.suggest", "toc.follow"], "search": "../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": {"default": "latest", "provider": "mike"}}</script>
+    
+    
+      <script src="../assets/javascripts/bundle.d7400e89.min.js"></script>
+      
+    
+  </body>
+</html>
