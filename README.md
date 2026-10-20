@@ -117,9 +117,7 @@ def total(data: bytes) -> int:
     return len(data)
 
 
-connector = EndpointConnector(
-    ['<Laptop Endpoint ID>', '<Cluster Endpoint ID>']
-)
+connector = EndpointConnector(['<Local Endpoint ID>', '<Cluster Endpoint ID>'])
 
 with Store(connector) as store:
     proxy = store.proxy(bytes(50_000_000))  # 50 MB
