@@ -344,22 +344,21 @@ class LeaseLifetime(ContextLifetime):
     def _timer_callback(self) -> None:
         if time.time() >= self._expiry:
             self.close()
-        else:  # pragma: no cover
-            # Excluded from coverage because some MacOS GitHub actions runners
-            # are slow enough that the timer always ends after the expiry
-            # in the tests cases. We could make the expiry very long, but
-            # that would just slow down the test suite.
+        else:
+            # The timer can end a little early because it uses a monotonic
+            # clock while the expiry is wall-clock time.
             self._start_timer()
 
     def _start_timer(self) -> None:
-        if self._timer is not None:  # pragma: no cover
-            # Excluded from coverage for the same reason as in
-            # _timer_callback().
-            self._timer.cancel()
-        interval = max(0, self._expiry - time.time())
-        self._timer = threading.Timer(interval, self._timer_callback)
-        self._timer.daemon = True
-        self._timer.start()
+        # Guarded by the lock because extend() and the timer thread can
+        # both restart the timer.
+        with self._lock:
+            if self._timer is not None:
+                self._timer.cancel()
+            interval = max(0, self._expiry - time.time())
+            self._timer = threading.Timer(interval, self._timer_callback)
+            self._timer.daemon = True
+            self._timer.start()
 
     def close(self, *, close_stores: bool = False) -> None:
         """End the lifetime and evict all associated objects.
@@ -388,14 +387,17 @@ class LeaseLifetime(ContextLifetime):
                 expiry to the specified timestamp even if the new time
                 is less than the current expiry.
         """
-        if isinstance(expiry, datetime):
-            self._expiry = expiry.timestamp()
-        elif isinstance(expiry, timedelta):
-            self._expiry += expiry.total_seconds()
-        elif isinstance(expiry, (int, float)):
-            self._expiry += expiry
-        else:
-            raise AssertionError('Unreachable.')
+        with self._lock:
+            if isinstance(expiry, datetime):
+                self._expiry = expiry.timestamp()
+            elif isinstance(expiry, timedelta):
+                self._expiry += expiry.total_seconds()
+            elif isinstance(expiry, (int, float)):
+                self._expiry += expiry
+            else:
+                raise AssertionError('Unreachable.')
+            # Restart the timer so an earlier expiry is not missed.
+            self._start_timer()
 
 
 class StaticLifetime:
