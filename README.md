@@ -8,45 +8,28 @@
 [![tests](https://github.com/proxystore/proxystore/actions/workflows/tests.yml/badge.svg?label=tests)](https://github.com/proxystore/proxystore/actions?cache-control=no-cache)
 [![pre-commit.ci status](https://results.pre-commit.ci/badge/github/proxystore/proxystore/main.svg)](https://results.pre-commit.ci/latest/github/proxystore/proxystore/main?cache-control=no-cache)
 
-ProxyStore provides pass-by-reference semantics for distributed Python applications via [*transparent object proxies*](https://docs.proxystore.dev/latest/concepts/proxy/).
+ProxyStore moves large data between Python processes and machines without sending it through your task scheduler, workflow system, or serverless platform.
 
-A proxy is a lightweight reference to an object in remote storage that can be cheaply sent to any process, even on a remote machine.
-The proxy resolves its target object just-in-time when first used and then behaves like the target object, so code consuming a proxy needs no changes and no knowledge of how the data is stored or moved.
-This reduces transfer overheads through intermediaries, such as workflow schedulers or cloud services, and decouples application logic from communication code.
+Instead of passing an object, you pass a [proxy](https://docs.proxystore.dev/latest/concepts/proxy/): a small reference that is cheap to send anywhere.
+The proxy fetches the real object the first time your code uses it and then behaves just like that object, so task code doesn't need to change.
 
-ProxyStore is used to build:
+## Is ProxyStore for You?
 
-* Task-based workflows (e.g., [Dask Distributed](https://docs.proxystore.dev/latest/guides/dask-distributed/))
-* Serverless applications (e.g., [Globus Compute](https://docs.proxystore.dev/latest/guides/globus-compute/))
-* [Distributed futures](https://docs.proxystore.dev/latest/guides/proxy-futures/)
-* [Bulk data streaming](https://docs.proxystore.dev/latest/guides/streaming/)
+ProxyStore helps if:
 
-Objects can be stored in and transferred via shared file systems, Redis, ZeroMQ, Globus Transfer, or [ProxyStore Endpoints](https://docs.proxystore.dev/latest/guides/endpoints/) for peer-to-peer transfer.
-See the [Connectors](https://docs.proxystore.dev/latest/api/connectors/) reference for all options or to implement your own.
+* Your workflow spans sites, such as HPC clusters, cloud VMs, and your laptop, and data needs to move with the tasks.
+* You run Python tasks across processes or machines using a framework like [Dask](https://docs.proxystore.dev/latest/guides/dask-distributed/), [Globus Compute](https://docs.proxystore.dev/latest/guides/globus-compute/), [Parsl](https://docs.proxystore.dev/latest/examples/), or [`concurrent.futures`](https://docs.python.org/3/library/concurrent.futures.html).
+* Task inputs or outputs are large, and passing them through the framework is slow, uses too much memory, or hits size limits.
+* You want to choose how data moves (shared file system, Redis, ZeroMQ, Globus Transfer, or [ProxyStore Endpoints](https://docs.proxystore.dev/latest/guides/endpoints/)) without rewriting application code.
 
-Learn more in the [Concepts](https://docs.proxystore.dev/latest/concepts/) overview and the complete documentation at [docs.proxystore.dev](https://docs.proxystore.dev).
+You probably don't need ProxyStore if your objects are small, everything runs in one process, or you need a database with queries and long-term storage.
 
-## Installation
+## Examples
 
-The base ProxyStore package can be installed with [`pip`](https://pip.pypa.io/en/stable/).
-```bash
-pip install proxystore
-```
+### Local Processes
 
-Leveraging third-party libraries may require dependencies not installed by default but can be enabled via extras installation options (e.g., `endpoints`, `kafka`, or `redis`).
-*All* additional dependencies can be installed with:
-```bash
-pip install proxystore[all]
-```
-
-See the [Installation](https://docs.proxystore.dev/latest/installation) guide
-for more information about the available extras installation options.
-See the [Contributing](https://docs.proxystore.dev/latest/contributing) guide
-to get started for local development.
-
-## Example
-
-Proxies are cheap to send to other processes and resolve themselves when used.
+Only the small proxy goes through the process pool.
+The data goes through the store (here, a shared directory) and is fetched by the worker when it is used.
 
 ```python
 from concurrent.futures import ProcessPoolExecutor
@@ -55,31 +38,94 @@ from proxystore.connectors.file import FileConnector
 from proxystore.store import Store
 
 
-def process(data: dict[str, str]) -> str:
-    # The proxy resolves itself to the dict when first used and
-    # then behaves exactly like the dict.
-    return data['hello']
+def total(data: bytes) -> int:
+    # The proxy fetches the bytes when first used and then
+    # behaves exactly like the bytes object.
+    return len(data)
 
 
 if __name__ == '__main__':
-    with Store(FileConnector('./proxystore-data')) as store:
-        # Put the object in the store and get back a proxy, a lightweight
-        # reference which is cheap to send to other processes.
-        proxy = store.proxy({'hello': 'world'})
+    data = bytes(100_000_000)  # 100 MB
 
-        # Functions can be invoked with the proxy without any changes.
+    with Store(FileConnector('./proxystore-data')) as store:
+        # Put the object in the store and get back a proxy.
+        proxy = store.proxy(data)
+
+        # Without ProxyStore, all 100 MB would be pickled and sent through
+        # the pool. With a proxy, only a small reference is sent.
         with ProcessPoolExecutor() as pool:
-            assert pool.submit(process, proxy).result() == 'world'
+            assert pool.submit(total, proxy).result() == 100_000_000
 ```
 
-Check out the [Get Started](https://docs.proxystore.dev/latest/get-started)
-guide to learn more!
+### Across Sites with Endpoints
+
+HPC compute nodes and cloud VMs are often behind firewalls that block incoming connections, which makes moving data between sites hard.
+[ProxyStore Endpoints](https://docs.proxystore.dev/latest/guides/endpoints/) are object stores that you run at each site and that send data directly to each other, peer-to-peer, with no open ports or SSH tunnels.
+If a direct connection isn't possible, endpoints fall back to encrypted relays (public or self-hosted).
+Endpoints only talk to peers you allow, and a proxy created at one site can be used at any other site with a peered endpoint.
+
+Set up an endpoint on each system (e.g., your laptop and an HPC cluster), and add the other system's endpoint as a peer.
+```bash
+pip install proxystore[endpoints]
+proxystore-endpoint configure my-endpoint  # Prints this endpoint's ID.
+proxystore-endpoint peers add my-endpoint other-site OTHER_ENDPOINT_ID
+proxystore-endpoint start my-endpoint
+```
+
+Then, use the `EndpointConnector` in place of the `FileConnector`.
+Here, the task runs on the cluster via [Globus Compute](https://docs.proxystore.dev/latest/guides/globus-compute/), and the cluster's endpoint fetches the data directly from your laptop's endpoint.
+```python
+from globus_compute_sdk import Executor
+
+from proxystore.connectors.endpoint import EndpointConnector
+from proxystore.store import Store
+
+
+def total(data: bytes) -> int:
+    return len(data)
+
+
+with Store(EndpointConnector()) as store:
+    proxy = store.proxy(bytes(100_000_000))  # 100 MB
+
+    with Executor(endpoint_id='<Globus Compute Endpoint UUID>') as gce:
+        assert gce.submit(total, proxy).result() == 100_000_000
+```
+
+Check out the [Get Started](https://docs.proxystore.dev/latest/get-started) guide to learn more!
+
+## Installation
+
+Install ProxyStore with [`pip`](https://pip.pypa.io/en/stable/).
+```bash
+pip install proxystore
+```
+
+Some connectors and features need extra dependencies, which you can install with extras options (e.g., `endpoints`, `kafka`, or `redis`).
+All extra dependencies can be installed with:
+```bash
+pip install proxystore[all]
+```
+
+See the [Installation](https://docs.proxystore.dev/latest/installation) guide for the full list of extras options.
+
+## Learn More
+
+* [Documentation](https://docs.proxystore.dev): the full docs, including the API reference and FAQ.
+* [Concepts](https://docs.proxystore.dev/latest/concepts/): how proxies, stores, and connectors fit together, and how to build on them if you're writing your own framework.
+* [Guides](https://docs.proxystore.dev/latest/guides/): using ProxyStore with Dask and Globus Compute, [distributed futures](https://docs.proxystore.dev/latest/guides/proxy-futures/), [data streaming](https://docs.proxystore.dev/latest/guides/streaming/), and more.
+* [Connectors](https://docs.proxystore.dev/latest/api/connectors/): all the ways to store and move data, or how to write your own.
+* [Contributing](https://docs.proxystore.dev/latest/contributing): set up a local development environment.
 
 ## Citation
 
 [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.8077899.svg)](https://doi.org/10.5281/zenodo.8077899)
 
 If you use ProxyStore or any of this code in your work, please cite our ProxyStore ([SC '23](https://dl.acm.org/doi/10.1145/3581784.3607047)) and Proxy Patterns ([TPDS](https://ieeexplore.ieee.org/document/10776778)) papers.
+
+<details markdown="1">
+<summary>BibTeX</summary>
+
 ```bib
 @inproceedings{pauloski2023proxystore,
     title = {Accelerating {C}ommunications in {F}ederated {A}pplications with {T}ransparent {O}bject {P}roxies},
@@ -108,3 +154,5 @@ If you use ProxyStore or any of this code in your work, please cite our ProxySto
     year = {2024}
 }
 ```
+
+</details>
