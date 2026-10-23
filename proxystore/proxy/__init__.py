@@ -39,6 +39,7 @@
 
 from __future__ import annotations
 
+import copy
 import math
 import operator
 import sys
@@ -423,7 +424,9 @@ class Proxy(as_metaclass(ProxyMetaType), Generic[T]):  # type: ignore[misc]
         default = object.__getattribute__(self, '__proxy_default_hash__')
         if not self.__proxy_resolved__ and default is not None:
             if isinstance(default, Exception):
-                raise default
+                # Raising the saved error would give it a traceback that
+                # references this proxy, so raise a copy instead.
+                raise copy.copy(default)
             return default
         return hash(self.__proxy_wrapped__)
 
