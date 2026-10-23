@@ -105,8 +105,7 @@ class LocalConnector:
         Args:
             key: Key associated with object to evict.
         """
-        if key in self._store:
-            del self._store[key]
+        self._store.pop(key, None)
 
     def exists(self, key: LocalKey) -> bool:
         """Check if an object associated with the key exists.
