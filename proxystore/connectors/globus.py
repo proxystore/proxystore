@@ -41,6 +41,8 @@ logger = logging.getLogger(__name__)
 GLOBUS_MKDIR_EXISTS_ERROR_CODE = 'ExternalError.MkdirFailed.Exists'
 # Statuses of Globus tasks which will not change again.
 _FINISHED_TASK_STATUSES = frozenset({'SUCCEEDED', 'FAILED'})
+# Number of entries to get per request when listing a directory.
+_LS_PAGE_SIZE = 1000
 
 
 class GlobusEndpoint:
@@ -306,11 +308,12 @@ class GlobusConnector:
         user to authenticate. Authentication only needs to be performed once
         per system
 
-    Warning:
+    Note:
         The [`close()`][proxystore.connectors.globus.GlobusConnector.close]
-        method will, by default, **delete all** of the provided directories
-        to keep in sync. Ensure that the provided directories are unique
-        and only used by ProxyStore.
+        method will, by default, delete the object files in each of the
+        provided directories. Only files named like the objects this
+        connector makes (a UUID) are deleted. The directories and any other
+        files in them are left as is.
 
     Args:
         endpoints: Collection of directories across Globus Collection endpoints
@@ -323,9 +326,10 @@ class GlobusConnector:
             endpoints. If this behavior is not desired, use multiple
             connector instances, each with a different set of endpoints.
         buffering: Buffering policy used with [`open()`][open].
-        clear: Delete all directories specified in `endpoints` when
+        clear: Delete the object files in the directories specified in
+            `endpoints` when
             [`close()`][proxystore.connectors.globus.GlobusConnector.close] is
-            called to cleanup files.
+            called.
         polling_interval: Interval in seconds to check if Globus Transfer
             tasks have finished.
         sync_level: Globus Transfer sync level.
@@ -514,12 +518,45 @@ class GlobusConnector:
 
         return tuple(tids)
 
+    def _list_object_files(self, endpoint: GlobusEndpoint) -> list[str]:
+        # Object files are named with a UUID, so other files in the
+        # directory are never deleted. The directory listing is paged.
+        names: list[str] = []
+        offset = 0
+        while True:
+            try:
+                with self._transfer_client_lock:
+                    response = self._transfer_client.operation_ls(
+                        endpoint.uuid,
+                        path=endpoint.endpoint_path,
+                        filter='type:file',
+                        limit=_LS_PAGE_SIZE,
+                        offset=offset,
+                    )
+            except globus_sdk.TransferAPIError as e:
+                if e.http_status == 404:
+                    # The directory was never made, so there is nothing to
+                    # delete.
+                    return names
+                raise
+            entries = list(response)
+            names.extend(
+                entry['name']
+                for entry in entries
+                if _is_object_filename(entry['name'])
+            )
+            if len(entries) < _LS_PAGE_SIZE:
+                return names
+            offset += len(entries)
+
     def close(self, *, clear: bool | None = None) -> bool:
         """Close the connector and clean up.
 
-        Warning:
-            This will delete the directory at `local_path` on each endpoint
-            by default.
+        Note:
+            By default, this deletes the object files in the directory of
+            each endpoint. Only files named like the objects this connector
+            makes (a UUID) are deleted. The directories and any other files
+            in them are left as is.
 
         Note:
             A [`Store`][proxystore.store.base.Store] only clears its
@@ -531,29 +568,36 @@ class GlobusConnector:
         Warning:
             This method should only be called at the end of the program when
             the store will no longer be used, for example once all proxies
-            have been resolved. Calling `close()` multiple times
-            can raise file not found errors.
+            have been resolved.
 
         Args:
-            clear: Delete the user-provided directories on each endpoint.
+            clear: Delete the object files in the directory of each endpoint.
                 Overrides the default value of `clear` provided when the
                 [`GlobusConnector`][proxystore.connectors.globus.GlobusConnector]
                 was instantiated.
 
         Returns:
-            If the directories were removed.
+            If the object files were deleted.
         """
         clear = self.clear if clear is None else clear
         if clear:
             for endpoint in self.endpoints:
+                filenames = self._list_object_files(endpoint)
+                if len(filenames) == 0:
+                    continue
+                # A file evicted since it was listed should not fail the
+                # task.
                 delete_task = globus_sdk.DeleteData(
                     endpoint=endpoint.uuid,
-                    recursive=True,
+                    ignore_missing=True,
                 )
                 delete_task['notify_on_succeeded'] = False
                 delete_task['notify_on_failed'] = False
                 delete_task['notify_on_inactive'] = False
-                delete_task.add_item(endpoint.endpoint_path)
+                for filename in filenames:
+                    delete_task.add_item(
+                        os.path.join(endpoint.endpoint_path, filename),
+                    )
                 with self._transfer_client_lock:
                     tdata = _submit_transfer_action(
                         self._transfer_client,
@@ -696,6 +740,14 @@ class GlobusConnector:
             GlobusKey(filename=filename, task_id=tids)
             for filename in filenames
         ]
+
+
+def _is_object_filename(name: str) -> bool:
+    # Objects are named with str(uuid.uuid4()).
+    try:
+        return str(uuid.UUID(name)) == name
+    except ValueError:
+        return False
 
 
 def _submit_transfer_action(
