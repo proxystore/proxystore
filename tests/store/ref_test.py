@@ -45,6 +45,9 @@ def store(
 ) -> Generator[Store[FileConnector], None, None]:
     with Store(FileConnector(tmp_path), cache_size_bytes=0) as store:
         yield store
+        # Owned proxies freed by the test evict their objects in the
+        # background.
+        evictions.wait()
         if not store_is_empty(store):  # pragma: no cover
             raise RuntimeError('Test left objects in the store.')
 
@@ -59,7 +62,9 @@ def put_in_store(
 
 def store_is_empty(store: Store[FileConnector]) -> bool:
     files = [
-        f for f in os.listdir(store.connector.store_dir) if os.path.isfile(f)
+        f
+        for f in os.listdir(store.connector.store_dir)
+        if os.path.isfile(os.path.join(store.connector.store_dir, f))
     ]
     return len(files) == 0
 
@@ -157,6 +162,7 @@ def test_owned_proxy_out_of_scope_evicts(store: Store[FileConnector]) -> None:
 
     _test_in_scope()
     gc.collect()
+    evictions.wait()
     assert store_is_empty(store)
 
 
