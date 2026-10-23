@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import copy
 import logging
 import os
 import threading
@@ -387,19 +388,25 @@ class PollingStoreFactory(StoreFactory[ConnectorT, T]):
         with Timer() as timer:
             store = self.get_store()
             sleep_interval = self.polling.interval
-            time_waited = 0.0
+            # The deadline uses the clock, not the sum of the sleeps, so
+            # time spent in store.get() counts toward the timeout.
+            deadline = None if timeout is None else time.monotonic() + timeout
 
             while True:
                 obj = store.get(self.key, default=_MISSING_OBJECT)
-
-                # Break because we found the object or we hit the timeout
-                if obj is not _MISSING_OBJECT or (
-                    timeout is not None and time_waited >= timeout
-                ):
+                if obj is not _MISSING_OBJECT:
                     break
 
-                time.sleep(sleep_interval)
-                time_waited += sleep_interval
+                if deadline is None:
+                    time.sleep(sleep_interval)
+                else:
+                    remaining = deadline - time.monotonic()
+                    if remaining <= 0:
+                        break
+                    # Do not sleep past the deadline, but still check the
+                    # store one last time when it is reached.
+                    time.sleep(min(sleep_interval, remaining))
+
                 new_interval = sleep_interval * self.polling.backoff_factor
                 sleep_interval = (
                     new_interval
@@ -410,7 +417,10 @@ class PollingStoreFactory(StoreFactory[ConnectorT, T]):
             if obj is _MISSING_OBJECT:
                 return None
             if isinstance(obj, BaseException):
-                raise obj
+                # The store may cache the exception object and return it on
+                # every get. Raise a copy so the cached object does not
+                # collect a traceback (and the frames it holds) each time.
+                raise copy.copy(obj)
             if self.evict:
                 store.evict(self.key)
 
