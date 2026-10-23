@@ -465,6 +465,16 @@ def _copy_attributes(
     object.__setattr__(dest, '__proxy_default_hash__', default_hash)
 
 
+def _check_valid(proxy: OwnedProxy[Any]) -> None:
+    # An owner is invalid once it was pickled, which moved ownership to the
+    # pickled copy, or freed. Its object may be evicted at any time then.
+    if not object.__getattribute__(proxy, '__proxy_valid__'):
+        raise ReferenceInvalidError(
+            'Cannot use an OwnedProxy which was already pickled or freed '
+            'because its object may be evicted.',
+        )
+
+
 def borrow(
     proxy: OwnedProxy[T],
     *,
@@ -484,10 +494,12 @@ def borrow(
     Raises:
         ReferenceNotOwnedError: if `proxy` is not an
             [`OwnedProxy`][proxystore.store.ref.OwnedProxy] instance.
+        ReferenceInvalidError: if `proxy` was already pickled or freed.
         MutableBorrowError: if `proxy` has already been mutably borrowed.
     """
     if not isinstance(proxy, OwnedProxy):
         raise ReferenceNotOwnedError('Only owned references can be borrowed.')
+    _check_valid(proxy)
     if object.__getattribute__(proxy, '__proxy_ref_mut_count__') > 0:
         raise MutableBorrowError('Proxy was already borrowed as mutable.')
     object.__setattr__(
@@ -520,11 +532,13 @@ def mut_borrow(
     Raises:
         ReferenceNotOwnedError: if `proxy` is not an
             [`OwnedProxy`][proxystore.store.ref.OwnedProxy] instance.
+        ReferenceInvalidError: if `proxy` was already pickled or freed.
         MutableBorrowError: if `proxy` has already been borrowed
             (mutable/immutable).
     """
     if not isinstance(proxy, OwnedProxy):
         raise ReferenceNotOwnedError('Only owned references can be borrowed.')
+    _check_valid(proxy)
     if object.__getattribute__(proxy, '__proxy_ref_mut_count__') > 0:
         raise MutableBorrowError('Proxy was already borrowed as mutable.')
     if object.__getattribute__(proxy, '__proxy_ref_count__') > 0:
@@ -552,6 +566,7 @@ def clone(proxy: OwnedProxy[T]) -> OwnedProxy[T]:
     Raises:
         ReferenceNotOwnedError: if `proxy` is not an
             [`OwnedProxy`][proxystore.store.ref.OwnedProxy] instance.
+        ReferenceInvalidError: if `proxy` was already pickled or freed.
         MutableBorrowError: if `proxy` is mutably borrowed, because the
             changes of the borrow may not be written to the store yet.
         ProxyResolveMissingKeyError: if the object of `proxy` is not in the
@@ -559,6 +574,7 @@ def clone(proxy: OwnedProxy[T]) -> OwnedProxy[T]:
     """
     if not isinstance(proxy, OwnedProxy):
         raise ReferenceNotOwnedError('Only owned references can be cloned.')
+    _check_valid(proxy)
     if object.__getattribute__(proxy, '__proxy_ref_mut_count__') > 0:
         raise MutableBorrowError(
             'Cannot clone a proxy which is borrowed as mutable.',
