@@ -250,6 +250,9 @@ class OwnedProxy(BaseRefProxy[T]):
     mutable borrows of this proxy. The target object will be evicted from
     the store by a background thread shortly after this proxy goes out of
     scope (this is handled via `__del__` and an [atexit][atexit] handler).
+    If borrowed references still exist then, such as when the garbage
+    collector frees a reference cycle that holds both, the object is evicted
+    once the last borrowed reference is freed instead.
     [`Store.close()`][proxystore.store.base.Store.close] and the exit of the
     program wait for these evictions.
 
@@ -269,10 +272,12 @@ class OwnedProxy(BaseRefProxy[T]):
     """
 
     __slots__ = (
+        '__proxy_drop_pending__',
         '__proxy_ref_count__',
         '__proxy_ref_mut_count__',
     )
 
+    __proxy_drop_pending__: bool
     __proxy_ref_count__: int
     __proxy_ref_mut_count__: int
 
@@ -283,6 +288,7 @@ class OwnedProxy(BaseRefProxy[T]):
         cache_defaults: bool = False,
         target: T | None = None,
     ) -> None:
+        object.__setattr__(self, '__proxy_drop_pending__', False)
         object.__setattr__(self, '__proxy_ref_count__', 0)
         object.__setattr__(self, '__proxy_ref_mut_count__', 0)
         super().__init__(factory, cache_defaults=cache_defaults, target=target)
@@ -322,22 +328,13 @@ class OwnedProxy(BaseRefProxy[T]):
 
     def __del__(self) -> None:
         if object.__getattribute__(self, '__proxy_valid__'):
-            ref_count = object.__getattribute__(self, '__proxy_ref_count__')
-            ref_mut_count = object.__getattribute__(
-                self,
-                '__proxy_ref_mut_count__',
-            )
-            if ref_count > 0 or ref_mut_count > 0:
-                raise RuntimeError(
-                    'Cannot safely delete OwnedProxy because there still '
-                    f'exists {ref_count} RefProxy and {ref_mut_count} '
-                    'RefMutProxy.',
-                )
-            # Evicting takes locks which this thread may already hold if
-            # the garbage collector called this, so it is done later by
-            # another thread.
-            evictions.put(object.__getattribute__(self, '__proxy_factory__'))
+            # Borrows hold a reference to their owner, so they can only
+            # still exist here if this was called directly or the garbage
+            # collector is freeing a cycle that holds both, in any order.
+            # The last borrow to be freed then evicts the object instead.
+            object.__setattr__(self, '__proxy_drop_pending__', True)
             object.__setattr__(self, '__proxy_valid__', False)
+            _evict_if_dropped(self)
 
 
 class RefProxy(BaseRefProxy[T]):
@@ -382,6 +379,7 @@ class RefProxy(BaseRefProxy[T]):
             ref_count = object.__getattribute__(owner, '__proxy_ref_count__')
             assert ref_count >= 1
             object.__setattr__(owner, '__proxy_ref_count__', ref_count - 1)
+            _evict_if_dropped(owner)
         object.__setattr__(self, '__proxy_owner__', None)
         object.__setattr__(self, '__proxy_valid__', False)
 
@@ -431,8 +429,24 @@ class RefMutProxy(BaseRefProxy[T]):
             )
             assert ref_mut_count == 1
             object.__setattr__(owner, '__proxy_ref_mut_count__', 0)
+            _evict_if_dropped(owner)
         object.__setattr__(self, '__proxy_owner__', None)
         object.__setattr__(self, '__proxy_valid__', False)
+
+
+def _evict_if_dropped(owner: OwnedProxy[Any]) -> None:
+    # Evict the object of the owner if the owner was freed and no borrows
+    # of it are left.
+    if (
+        object.__getattribute__(owner, '__proxy_drop_pending__')
+        and object.__getattribute__(owner, '__proxy_ref_count__') == 0
+        and object.__getattribute__(owner, '__proxy_ref_mut_count__') == 0
+    ):
+        object.__setattr__(owner, '__proxy_drop_pending__', False)
+        # Evicting takes locks which this thread may already hold if the
+        # garbage collector called this, so it is done later by another
+        # thread.
+        evictions.put(object.__getattribute__(owner, '__proxy_factory__'))
 
 
 def _copy_attributes(

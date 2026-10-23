@@ -124,22 +124,30 @@ def test_finalize_live_refs_continues_after_error(
     live_refs: weakref.WeakValueDictionary[int, ref.BaseRefProxy[object]],
     caplog: pytest.LogCaptureFixture,
 ) -> None:
-    other = OwnedProxy(put_in_store('value', store))
+    other_factory = put_in_store('value', store)
+    other = OwnedProxy(other_factory)
     proxy = OwnedProxy(put_in_store('value', store))
-    borrowed = borrow(proxy)
-    # Pretend the borrowed reference was sent to another process so the
-    # owner still has an outstanding borrow at exit.
-    object.__setattr__(borrowed, '__proxy_owner__', None)
+    evict_if_dropped = ref._evict_if_dropped
 
-    with caplog.at_level(logging.ERROR, logger='proxystore.store.ref'):
+    def _evict(owner: OwnedProxy[Any]) -> None:
+        if owner is proxy:
+            raise RuntimeError('failed')
+        evict_if_dropped(owner)
+
+    with (
+        caplog.at_level(logging.ERROR, logger='proxystore.store.ref'),
+        mock.patch.object(ref, '_evict_if_dropped', side_effect=_evict),
+    ):
         ref._finalize_live_refs()
 
+    # The error finalizing proxy is logged, and the older proxy is still
+    # finalized.
     assert 'Failed to finalize OwnedProxy at exit' in caplog.text
     assert not object.__getattribute__(other, '__proxy_valid__')
-    assert object.__getattribute__(proxy, '__proxy_valid__')
+    assert not store.exists(other_factory.key)
 
-    object.__setattr__(proxy, '__proxy_ref_count__', 0)
-    proxy.__del__()
+    ref._evict_if_dropped(proxy)
+    evictions.wait()
 
 
 def test_owned_proxy_out_of_scope_evicts(store: Store[FileConnector]) -> None:
@@ -193,22 +201,49 @@ def test_mut_borrow_does_not_resolve(store: Store[FileConnector]) -> None:
     assert borrowed == 'value'
 
 
-def test_borrow_delete_owned_proxy_error(store: Store[FileConnector]) -> None:
+@pytest.mark.parametrize('borrow_func', (borrow, mut_borrow))
+def test_owned_proxy_freed_while_borrowed(
+    borrow_func: Callable[[OwnedProxy[str]], Proxy[str]],
+    store: Store[FileConnector],
+) -> None:
     factory = put_in_store('value', store)
     proxy = OwnedProxy(factory)
+    borrowed = borrow_func(proxy)
 
-    _borrowed = borrow(proxy)
+    # `del proxy` would not call __del__ because borrowed references proxy,
+    # so call it directly like the garbage collector does for a cycle.
+    proxy.__del__()
+    evictions.wait()
+    assert store.exists(factory.key)
+    assert borrowed == 'value'
 
-    # We can't use `del proxy` because del only calls __del__ once the
-    # reference count of proxy is 0, but borrowed has a reference to proxy
-    # keeping the count at 1. In general, this is good and should prevent
-    # this runtime error from happening, but we want to raise a helpful
-    # message in the event we get into this position.
-    with pytest.raises(
-        RuntimeError,
-        match=r'^Cannot safely delete OwnedProxy',
-    ):
-        proxy.__del__()
+    # The last borrow evicts the object once it is freed.
+    del borrowed
+    evictions.wait()
+    assert not store.exists(factory.key)
+
+
+class _Holder:
+    owner: OwnedProxy[str]
+    borrowed: Proxy[str]
+    cycle: _Holder
+
+
+def test_owned_proxy_in_cycle_with_borrow(store: Store[FileConnector]) -> None:
+    keys = []
+    for _ in range(10):
+        factory = put_in_store('value', store)
+        keys.append(factory.key)
+        holder = _Holder()
+        holder.owner = OwnedProxy(factory)
+        holder.borrowed = borrow(holder.owner)
+        holder.cycle = holder
+    del holder
+
+    # The garbage collector frees the owner and the borrow in any order.
+    gc.collect()
+    evictions.wait()
+    assert not any(store.exists(key) for key in keys)
 
 
 def test_clone(store: Store[FileConnector]) -> None:
