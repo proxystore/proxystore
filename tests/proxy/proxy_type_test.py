@@ -898,6 +898,26 @@ def test_precompute_unhashable_does_not_reference_proxy() -> None:
     assert error.__traceback__ is None
 
 
+def test_unhashable_raise_does_not_change_default() -> None:
+    target = [1, 2, 3]
+    proxy = Proxy(
+        lambda: target,  # pragma: no cover
+        cache_defaults=True,
+        target=target,
+    )
+    del proxy.__proxy_wrapped__
+    error = object.__getattribute__(proxy, '__proxy_default_hash__')
+
+    with pytest.raises(TypeError, match='unhashable') as exc_info:
+        hash(proxy)
+    assert not proxy.__proxy_resolved__
+
+    # A copy is raised, so the saved error does not get a traceback which
+    # references the proxy.
+    assert exc_info.value is not error
+    assert error.__traceback__ is None
+
+
 def test_generic_alias_type_checking() -> None:
     my_dict_proxy = Proxy(lambda: {'a': 1, 'b': 2})
     assert isinstance(my_dict_proxy, dict)
