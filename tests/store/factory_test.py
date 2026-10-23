@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import threading
+from collections.abc import Callable
 from concurrent.futures import Future
 from typing import Any
 from unittest import mock
@@ -77,7 +78,25 @@ def test_polling_store_factory_timeout() -> None:
             factory.resolve()
 
 
+class _FakeClock:
+    # Time only moves forward when the poller sleeps or a test moves it.
+    def __init__(self, on_sleep: Callable[[], None] | None = None) -> None:
+        self.now = 0.0
+        self.sleeps: list[float] = []
+        self.on_sleep = on_sleep
+
+    def monotonic(self) -> float:
+        return self.now
+
+    def sleep(self, seconds: float) -> None:
+        self.sleeps.append(seconds)
+        self.now += seconds
+        if self.on_sleep is not None:
+            self.on_sleep()
+
+
 def test_polling_store_factory_backoff() -> None:
+    clock = _FakeClock()
     with Store(LocalConnector()) as store:
         key = store.connector.new_key()
         factory: FactoryT = PollingStoreFactory(
@@ -92,19 +111,99 @@ def test_polling_store_factory_backoff() -> None:
             ),
         )
         with (
-            mock.patch('proxystore.store.factory.time.sleep') as mock_sleep,
+            mock.patch.object(factory_module, 'time', clock),
             pytest.raises(ProxyResolveMissingKeyError),
         ):
             factory.resolve()
 
-        # The interval doubles up to the limit until the total time slept
-        # reaches the timeout.
-        assert mock_sleep.call_args_list == [
-            mock.call(0.25),
-            mock.call(0.5),
-            mock.call(1),
-            mock.call(1),
-        ]
+    # The interval doubles up to the limit, and the last sleep is cut
+    # short so it ends at the timeout.
+    assert clock.sleeps == [0.25, 0.5, 1, 0.75]
+
+
+def test_polling_store_factory_timeout_counts_get_time() -> None:
+    clock = _FakeClock()
+
+    def _slow_get(key: Any) -> None:
+        clock.now += 1
+
+    with Store(LocalConnector()) as store:
+        key = store.connector.new_key()
+        factory: FactoryT = PollingStoreFactory(
+            key=key,
+            store_config=store.config(),
+            polling=PollingPolicy(interval=0.01, timeout=5),
+        )
+        with (
+            mock.patch.object(factory_module, 'time', clock),
+            mock.patch.object(
+                store.connector,
+                'get',
+                side_effect=_slow_get,
+            ) as mock_get,
+            pytest.raises(ProxyResolveMissingKeyError),
+        ):
+            factory.resolve()
+
+    # Each get takes 1 second, so polling stops after about 5 gets
+    # rather than after 500 sleeps of 0.01 seconds.
+    assert mock_get.call_count == 5
+
+
+def test_polling_store_factory_zero_interval_times_out() -> None:
+    with Store(LocalConnector()) as store:
+        key = store.connector.new_key()
+        factory: FactoryT = PollingStoreFactory(
+            key=key,
+            store_config=store.config(),
+            polling=PollingPolicy(interval=0, timeout=0.01),
+        )
+        with pytest.raises(ProxyResolveMissingKeyError):
+            factory.resolve()
+
+
+def test_polling_store_factory_no_timeout() -> None:
+    with Store(LocalConnector()) as store:
+        key = store.connector.new_key()
+
+        def _put_after_three_sleeps() -> None:
+            if len(clock.sleeps) == 3:
+                store._set(key, 'value')
+
+        clock = _FakeClock(on_sleep=_put_after_three_sleeps)
+        factory: FactoryT = PollingStoreFactory(
+            key=key,
+            store_config=store.config(),
+            polling=PollingPolicy(interval=0.25, backoff_factor=2),
+        )
+        with mock.patch.object(factory_module, 'time', clock):
+            assert factory.resolve() == 'value'
+
+    assert clock.sleeps == [0.25, 0.5, 1]
+
+
+def test_polling_store_factory_raises_copy_of_exception() -> None:
+    # The default cache keeps the exception object after the first get.
+    with Store(LocalConnector()) as store:
+        key = store.connector.new_key()
+        store._set(key, ValueError('Oops'))
+        factory: FactoryT = PollingStoreFactory(
+            key=key,
+            store_config=store.config(),
+        )
+
+        raised = []
+        for _ in range(2):
+            with pytest.raises(ValueError, match='Oops') as exc_info:
+                factory.resolve()
+            raised.append(exc_info.value)
+
+        # Each call raises a new copy, so the exception in the cache does
+        # not collect a traceback each time it is raised.
+        assert raised[0] is not raised[1]
+        cached = store.get(key)
+        assert isinstance(cached, ValueError)
+        assert cached.__traceback__ is None
 
 
 def test_polling_store_factory_serialize() -> None:
