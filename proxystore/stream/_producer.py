@@ -45,6 +45,16 @@ class _TopicBuffer(Generic[T]):
     end_of_stream_sent: bool = False
 
 
+def _evict(store: Store[Any], keys: list[Any]) -> None:
+    # Errors are logged so every key is tried and the error that caused the
+    # eviction is not hidden.
+    for key in keys:
+        try:
+            store.evict(key)
+        except Exception:
+            logger.exception('Failed to evict object of failed flush: %s', key)
+
+
 class StreamProducer(Generic[T]):
     """Stream producer interface.
 
@@ -156,6 +166,19 @@ class StreamProducer(Generic[T]):
             return self._stores[topic]
         return self._default_store
 
+    def _aggregate(
+        self,
+        objects: list[_BufferedObject[T]],
+    ) -> list[_BufferedObject[T]]:
+        if self._aggregator is None or len(objects) == 0:
+            return objects
+        obj = self._aggregator([item.obj for item in objects])
+        evict = any(item.evict for item in objects)
+        metadata: dict[str, Any] = {}
+        for item in objects:
+            metadata.update(item.metadata)
+        return [_BufferedObject(obj, evict, metadata)]
+
     def _send_event(self, batch: EventBatch) -> None:
         if isinstance(self.publisher, EventPublisher):
             self.publisher.send_events(batch)
@@ -234,7 +257,7 @@ class StreamProducer(Generic[T]):
 
         This method:
 
-        1. Pops the current batch of objects off the topic buffer.
+        1. Takes the current batch of objects from the topic buffer.
         2. Applies the aggregator to the batch if one was provided.
         3. Puts the batch of objects in the
            [`Store`][proxystore.store.Store].
@@ -242,35 +265,29 @@ class StreamProducer(Generic[T]):
            additional metadata.
         5. Publishes the event to the stream via the
            [`Publisher`][proxystore.stream.protocols.Publisher].
+        6. Clears the topic buffer.
+
+        If any step fails, the objects put in the store by this flush are
+        evicted and the topic buffer is left as it was, so the flush can be
+        tried again.
 
         Args:
             topic: Topic to flush.
         """
-        objects = self._buffer[topic].objects
+        buffer = self._buffer[topic]
+        objects = buffer.objects
         # Only send the end of stream event the first time the topic is
         # flushed after being closed.
-        send_end_of_stream = (
-            self._buffer[topic].closed
-            and not self._buffer[topic].end_of_stream_sent
-        )
+        send_end_of_stream = buffer.closed and not buffer.end_of_stream_sent
 
         if len(objects) == 0 and not send_end_of_stream:
             # No events to send so quick return
             return
 
-        # Reset buffer
-        self._buffer[topic].objects = []
-
-        if self._aggregator is not None and len(objects) > 0:
-            obj = self._aggregator([item.obj for item in objects])
-            evict = any(item.evict for item in objects)
-            metadata: dict[str, Any] = {}
-            for item in objects:
-                metadata.update(item.metadata)
-            objects = [_BufferedObject(obj, evict, metadata)]
-
+        objects = self._aggregate(objects)
         events: list[Event] = []
         store = self._get_store(topic)
+        keys: list[Any] = []
 
         if len(objects) > 0 and store is not None:
             keys = store.put_batch([item.obj for item in objects])
@@ -298,13 +315,23 @@ class StreamProducer(Generic[T]):
 
         if send_end_of_stream:
             events.append(EndOfStreamEvent(topic))
-            self._buffer[topic].end_of_stream_sent = True
 
         # If there are no new events and the stream wasn't closed we should
         # have early exited
         assert len(events) > 0
         batch_event = EventBatch(topic, events)
-        self._send_event(batch_event)
+        try:
+            self._send_event(batch_event)
+        except Exception:
+            # The objects would never be consumed, and trying the flush
+            # again puts them in the store again.
+            if store is not None:
+                _evict(store, keys)
+            raise
+
+        buffer.objects = []
+        if send_end_of_stream:
+            buffer.end_of_stream_sent = True
 
     def send(
         self,
@@ -322,6 +349,9 @@ class StreamProducer(Generic[T]):
            skipping streaming this object if the filter returns `False`.
         2. Adds the object to the internal event buffer for this topic.
         3. Flushes the event buffer once the batch size is reached.
+
+        If the flush fails, the error is raised and `obj` is removed from the
+        buffer, so it can be sent again.
 
         Warning:
             Careful consideration should be given to the setting of the
@@ -362,7 +392,15 @@ class StreamProducer(Generic[T]):
             return
 
         item = _BufferedObject(obj, evict, metadata)
-        self._buffer[topic].objects.append(item)
+        buffer = self._buffer[topic]
+        buffer.objects.append(item)
 
-        if len(self._buffer[topic].objects) >= self._batch_size:
-            self.flush_topic(topic)
+        if len(buffer.objects) >= self._batch_size:
+            try:
+                self.flush_topic(topic)
+            except Exception:
+                # The object was not sent, so it is removed so sending it
+                # again does not buffer it twice. Objects buffered by earlier
+                # calls are kept for the next flush.
+                buffer.objects.pop()
+                raise

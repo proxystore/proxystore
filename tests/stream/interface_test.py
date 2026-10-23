@@ -1,11 +1,14 @@
 from __future__ import annotations
 
+import logging
 import math
+import os
 import pathlib
 import threading
 import uuid
 from collections.abc import Generator
 from typing import Any
+from unittest import mock
 
 import pytest
 
@@ -488,4 +491,105 @@ def test_producer_sends_end_of_stream_once(
             events.extend(batch.events)
         assert sum(isinstance(e, EndOfStreamEvent) for e in events) == 1
 
+    subscriber.close()
+
+
+@pytest.mark.parametrize('use_store', (True, False))
+def test_failed_flush_can_be_retried(
+    use_store: bool,
+    store: Store[FileConnector],
+) -> None:
+    topic = 'default'
+    publisher, subscriber = create_message_pubsub_pair(topic)
+
+    with (
+        StreamProducer[str](
+            publisher,
+            stores={topic: store if use_store else None},
+            batch_size=10,
+        ) as producer,
+        StreamConsumer[str](subscriber) as consumer,
+    ):
+        producer.send(topic, 'a')
+        producer.send(topic, 'b')
+
+        with (
+            mock.patch.object(
+                publisher,
+                'send_message',
+                side_effect=RuntimeError('down'),
+            ),
+            pytest.raises(RuntimeError, match='down'),
+        ):
+            producer.close_topics(topic)
+
+        # The objects of the failed flush were evicted.
+        assert os.listdir(store.connector.store_dir) == []
+
+        producer.close_topics(topic)
+        assert list(consumer) == ['a', 'b']
+
+
+def test_failed_send_does_not_buffer_object(
+    store: Store[FileConnector],
+) -> None:
+    topic = 'default'
+    publisher, subscriber = create_message_pubsub_pair(topic)
+
+    with (
+        StreamProducer[str](
+            publisher,
+            stores={topic: store},
+            batch_size=2,
+        ) as producer,
+        StreamConsumer[str](subscriber) as consumer,
+    ):
+        producer.send(topic, 'a')
+        with (
+            mock.patch.object(
+                publisher,
+                'send_message',
+                side_effect=RuntimeError('down'),
+            ),
+            pytest.raises(RuntimeError, match='down'),
+        ):
+            producer.send(topic, 'b')
+
+        # Sending the object again buffers it once.
+        producer.send(topic, 'b')
+        producer.close_topics(topic)
+        assert list(consumer) == ['a', 'b']
+
+
+def test_failed_flush_logs_evict_errors(
+    store: Store[FileConnector],
+    caplog: pytest.LogCaptureFixture,
+) -> None:
+    caplog.set_level(logging.ERROR)
+    topic = 'default'
+    publisher, subscriber = create_message_pubsub_pair(topic)
+
+    with StreamProducer[str](
+        publisher,
+        stores={topic: store},
+        batch_size=10,
+    ) as producer:
+        producer.send(topic, 'a')
+        producer.send(topic, 'b')
+        with (
+            mock.patch.object(
+                publisher,
+                'send_message',
+                side_effect=RuntimeError('down'),
+            ),
+            mock.patch.object(
+                store,
+                'evict',
+                side_effect=RuntimeError('evict failed'),
+            ),
+            pytest.raises(RuntimeError, match='down'),
+        ):
+            producer.flush_topic(topic)
+
+    assert caplog.text.count('Failed to evict object of failed flush') == 2
     subscriber.close()
