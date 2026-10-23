@@ -1215,35 +1215,27 @@ class Store(Generic[ConnectorT]):
 
         with Timer() as timer:
             # Find if there are non-proxiable types and if that's okay
-            non_proxiable: list[tuple[int, Any]] = []
-            for i, obj in enumerate(objs):
-                if isinstance(obj, _NON_PROXIABLE_TYPES):
-                    non_proxiable.append((i, obj))
+            proxiable = [
+                not isinstance(obj, _NON_PROXIABLE_TYPES) for obj in objs
+            ]
+            proxiable_objs = [
+                obj for obj, ok in zip(objs, proxiable, strict=True) if ok
+            ]
+            non_proxiable_count = len(objs) - len(proxiable_objs)
 
-            if len(non_proxiable) > 0 and not skip_nonproxiable:
+            if non_proxiable_count > 0 and not skip_nonproxiable:
                 raise NonProxiableTypeError(
-                    f'Input sequence contains {len(non_proxiable)} '
+                    f'Input sequence contains {non_proxiable_count} '
                     'objects that are not proxiable.',
                 )
-
-            # Pop non-proxiable types so we can batch proxy the proxiable ones
-            non_proxiable_indicies = [i for i, _ in non_proxiable]
-            proxiable_objs = [
-                obj
-                for i, obj in enumerate(objs)
-                if i not in non_proxiable_indicies
-            ]
 
             keys = self.put_batch(
                 proxiable_objs,
                 connector_options=connector_options,
             )
+            config = self.config()
             factories: list[StoreFactory[ConnectorT, T]] = [
-                StoreFactory(
-                    key,
-                    store_config=self.config(),
-                    evict=evict,
-                )
+                StoreFactory(key, store_config=config, evict=evict)
                 for key in keys
             ]
 
@@ -1265,9 +1257,11 @@ class Store(Generic[ConnectorT]):
                 lifetime.add_proxy(*proxies)
 
             # Put non-proxiable objects back in their original positions.
-            # The indices of non_proxiable must still be sorted
-            for original_index, original_object in non_proxiable:
-                proxies.insert(original_index, original_object)
+            proxy_iter = iter(proxies)
+            results: list[Any] = [
+                next(proxy_iter) if ok else obj
+                for obj, ok in zip(objs, proxiable, strict=True)
+            ]
 
         if self.metrics is not None:
             self.metrics.add_time('store.proxy_batch', keys, timer.elapsed_ms)
@@ -1275,10 +1269,10 @@ class Store(Generic[ConnectorT]):
         logger.debug(
             'Store(%s): PROXY_BATCH (%s items) in %.3f ms',
             self._label,
-            len(proxies),
+            len(results),
             timer.elapsed_ms,
         )
-        return cast(list[Proxy[T] | NonProxiableT], proxies)
+        return cast(list[Proxy[T] | NonProxiableT], results)
 
     def proxy_from_key(
         self: Store[Connector[KeyT]],

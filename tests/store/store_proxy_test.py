@@ -357,6 +357,18 @@ def test_proxy_batch_skip_nonproxiable(store: Store[LocalConnector]) -> None:
     )
 
 
+def test_proxy_batch_keeps_order(store: Store[LocalConnector]) -> None:
+    inputs = [None, 'a', False, True, [1, 2, 3], 'b', None]
+    outputs = store.proxy_batch(inputs, populate_target=False)
+    assert len(outputs) == len(inputs)
+    for output, value in zip(outputs, inputs, strict=True):
+        if value is None or isinstance(value, bool):
+            assert output is value
+        else:
+            assert isinstance(output, Proxy)
+            assert output == value
+
+
 def test_proxy_batch_nonproxiable_error(store: Store[LocalConnector]) -> None:
     with pytest.raises(NonProxiableTypeError):
         # Only one bad value needed to fail
