@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import contextlib
 import json
+import logging
 from collections.abc import Generator
 from typing import Any
 from unittest import mock
@@ -337,6 +338,26 @@ def test_multi_connector_close_returns_if_any_cleared(
         {'c1': (connector1, Policy()), 'c2': (connector2, Policy())},
     )
     assert connector.close() is expected
+
+
+def test_multi_connector_close_after_error(
+    caplog: pytest.LogCaptureFixture,
+) -> None:
+    caplog.set_level(logging.ERROR)
+    connectors = [mock.MagicMock() for _ in range(3)]
+    connectors[0].close.side_effect = RuntimeError('first')
+    connectors[1].close.side_effect = RuntimeError('second')
+    connector = MultiConnector(
+        {f'c{i}': (c, Policy()) for i, c in enumerate(connectors)},
+    )
+
+    # The first error is raised once every connector is closed, and later
+    # errors are logged.
+    with pytest.raises(RuntimeError, match='first'):
+        connector.close()
+    for c in connectors:
+        c.close.assert_called_once_with()
+    assert 'Failed to close connector c1' in caplog.text
 
 
 def _connector_name(key: tuple[Any, ...]) -> str:

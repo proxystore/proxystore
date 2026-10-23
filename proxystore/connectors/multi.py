@@ -321,14 +321,29 @@ class MultiConnector:
 
         Returns:
             If any managed connector removed its objects.
+
+        Raises:
+            Exception: The first error raised by closing a managed connector.
+                Every managed connector is still closed, and later errors
+                are logged.
         """
         cleared = False
-        for connector, _ in self.connectors.values():
-            if clear is None:
-                result = connector.close()
-            else:
-                result = connector.close(clear=clear)
+        error: Exception | None = None
+        for name, (connector, _) in self.connectors.items():
+            try:
+                if clear is None:
+                    result = connector.close()
+                else:
+                    result = connector.close(clear=clear)
+            except Exception as e:
+                if error is None:
+                    error = e
+                else:
+                    logger.exception('Failed to close connector %s', name)
+                continue
             cleared = cleared or result is True
+        if error is not None:
+            raise error
         return cleared
 
     def config(self) -> dict[str, ConnectorPolicyConfig]:
