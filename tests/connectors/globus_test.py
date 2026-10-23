@@ -4,6 +4,7 @@ import json
 import os
 import pathlib
 import re
+import uuid
 from unittest import mock
 
 import globus_sdk
@@ -355,50 +356,128 @@ def test_globus_connector_key_equality() -> None:
     assert hash(key) == hash(GlobusKey('a', ('b',)))
 
 
-@pytest.mark.parametrize(
-    ('clear_default', 'clear_override', 'should_exist'),
-    ((True, None, False), (False, True, False), (False, False, True)),
+_CLOSE_ENDPOINTS = GlobusEndpoints(
+    [
+        GlobusEndpoint(
+            uuid='EP1UUID',
+            endpoint_path='/~/',
+            local_path='/tmp/proxystore-test-1',
+            host_regex='localhost',
+        ),
+        GlobusEndpoint(
+            uuid='EP2UUID',
+            endpoint_path='/~/',
+            local_path='/tmp/proxystore-test-2',
+            host_regex='localhost',
+        ),
+    ],
 )
-def test_delete_local_paths_on_close(
+
+
+class _PatchedError(globus_sdk.TransferAPIError):
+    def __init__(self, status: int):
+        self.http_status = status
+
+
+@pytest.mark.parametrize(
+    ('clear_default', 'clear_override', 'should_clear'),
+    ((True, None, True), (False, True, True), (False, False, False)),
+)
+def test_close_deletes_only_object_files(
     clear_default: bool,
     clear_override: bool | None,
-    should_exist: bool,
+    should_clear: bool,
 ) -> None:
-    endpoints = GlobusEndpoints(
-        [
-            GlobusEndpoint(
-                uuid='EP1UUID',
-                endpoint_path='/~/',
-                local_path='/tmp/proxystore-test-1',
-                host_regex='localhost',
-            ),
-            GlobusEndpoint(
-                uuid='EP2UUID',
-                endpoint_path='/~/',
-                local_path='/tmp/proxystore-test-2',
-                host_regex='localhost',
-            ),
-        ],
-    )
+    name = str(uuid.uuid4())
+    # Only names in the exact format of object files are deleted.
+    entries = [{'name': name}, {'name': 'notes.txt'}, {'name': name.upper()}]
 
     with (
         mock.patch(
             'proxystore.connectors.globus.get_transfer_client',
-        ),
+        ) as get_client,
+        mock.patch('globus_sdk.DeleteData') as delete_data,
         mock.patch(
             'proxystore.connectors.globus._submit_transfer_action',
             return_value={'task_id': 'ABCD'},
         ) as mocked,
     ):
-        connector = GlobusConnector(endpoints=endpoints, clear=clear_default)
+        get_client.return_value.operation_ls.return_value = entries
+        connector = GlobusConnector(
+            endpoints=_CLOSE_ENDPOINTS,
+            clear=clear_default,
+        )
         cleared = connector.close(clear=clear_override)
 
-    assert cleared is not should_exist
-
-    if should_exist:
+    assert cleared is should_clear
+    if not should_clear:
         assert mocked.call_count == 0
-    else:
-        assert mocked.call_count == len(endpoints)
+        return
+
+    # One task per endpoint which deletes only the object file. The tasks
+    # are not recursive.
+    assert mocked.call_count == len(_CLOSE_ENDPOINTS)
+    assert delete_data.call_args_list == [
+        mock.call(endpoint='EP1UUID', ignore_missing=True),
+        mock.call(endpoint='EP2UUID', ignore_missing=True),
+    ]
+    path = os.path.join('/~/', name)
+    assert delete_data.return_value.add_item.call_args_list == [
+        mock.call(path),
+        mock.call(path),
+    ]
+
+
+def test_close_lists_directory_in_pages() -> None:
+    names = [str(uuid.uuid4()) for _ in range(3)]
+    pages = [[{'name': names[0]}, {'name': names[1]}], [{'name': names[2]}]]
+
+    with (
+        mock.patch(
+            'proxystore.connectors.globus.get_transfer_client',
+        ) as get_client,
+        mock.patch(
+            'proxystore.connectors.globus._submit_transfer_action',
+            return_value={'task_id': 'ABCD'},
+        ),
+        mock.patch('proxystore.connectors.globus._LS_PAGE_SIZE', 2),
+    ):
+        client = get_client.return_value
+        client.operation_ls.side_effect = pages
+        connector = GlobusConnector(endpoints=_CLOSE_ENDPOINTS)
+        assert connector._list_object_files(_CLOSE_ENDPOINTS['EP1UUID']) == (
+            names
+        )
+
+    offsets = [c.kwargs['offset'] for c in client.operation_ls.call_args_list]
+    assert offsets == [0, 2]
+
+
+def test_close_missing_directory() -> None:
+    with (
+        mock.patch(
+            'proxystore.connectors.globus.get_transfer_client',
+        ) as get_client,
+        mock.patch(
+            'proxystore.connectors.globus._submit_transfer_action',
+        ) as mocked,
+    ):
+        get_client.return_value.operation_ls.side_effect = _PatchedError(404)
+        connector = GlobusConnector(endpoints=_CLOSE_ENDPOINTS)
+        assert connector.close()
+
+    # Nothing was listed, so no delete tasks were submitted.
+    assert mocked.call_count == 0
+
+
+def test_close_list_error() -> None:
+    with mock.patch(
+        'proxystore.connectors.globus.get_transfer_client',
+    ) as get_client:
+        get_client.return_value.operation_ls.side_effect = _PatchedError(500)
+        connector = GlobusConnector(endpoints=_CLOSE_ENDPOINTS)
+        with pytest.raises(globus_sdk.TransferAPIError):
+            connector.close()
 
 
 def test_globus_connector_file_removed_after_exists(globus_connector) -> None:

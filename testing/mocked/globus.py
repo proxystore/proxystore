@@ -60,6 +60,10 @@ class MockTransferClient:
         assert isinstance(task_id, str)
         return {'task_id': task_id, 'status': 'SUCCEEDED'}
 
+    def operation_ls(self, *args, **kwargs) -> list[dict[str, Any]]:
+        """List a directory."""
+        return []
+
     def submit_delete(self, delete_data: MockDeleteData) -> dict[str, str]:
         """Submit DeleteData."""
         assert isinstance(delete_data, MockDeleteData)
