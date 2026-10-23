@@ -173,6 +173,7 @@ This requires two additional rules.
 Pickling an [`OwnedProxy[T]`][proxystore.store.ref.OwnedProxy] moves ownership to the pickled copy (e.g., when passing it to a function in another process), and the original proxy becomes invalid.
 Because there can only be one owner, an [`OwnedProxy[T]`][proxystore.store.ref.OwnedProxy] can only be pickled once and cannot be pickled while it is borrowed.
 Doing so raises a [`ReferenceInvalidError`][proxystore.store.ref.ReferenceInvalidError] or [`ReferenceBorrowedError`][proxystore.store.ref.ReferenceBorrowedError], respectively.
+Borrowing or cloning the original proxy after it was pickled also raises a [`ReferenceInvalidError`][proxystore.store.ref.ReferenceInvalidError] because the new owner may evict the object.
 Some frameworks pickle task arguments more than once (e.g., to estimate their size, log them, or retry a task), so pass a borrowed reference, a [`clone()`][proxystore.store.ref.clone], or a default [`Proxy`][proxystore.proxy.Proxy] in these cases.
 
 Reference proxy types can be created and used using:

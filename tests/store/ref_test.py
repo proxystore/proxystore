@@ -449,6 +449,22 @@ def test_mut_borrow_already_mutably_error(store: Store[FileConnector]) -> None:
         mut_borrow(proxy)
 
 
+@pytest.mark.parametrize('func', (borrow, mut_borrow, clone))
+def test_invalid_owner_error(
+    func: Callable[[OwnedProxy[str]], Proxy[str]],
+    store: Store[FileConnector],
+) -> None:
+    factory = put_in_store('value', store)
+    proxy = OwnedProxy(factory)
+    new_proxy = pickle.loads(pickle.dumps(proxy))
+
+    # Pickling moved ownership to new_proxy, which may evict the object.
+    with pytest.raises(ReferenceInvalidError, match='already pickled'):
+        func(proxy)
+
+    del new_proxy
+
+
 def test_clone_unowned_error(store: Store[FileConnector]) -> None:
     factory = put_in_store('value', store)
     proxy = OwnedProxy(factory)
