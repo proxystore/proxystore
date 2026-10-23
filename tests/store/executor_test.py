@@ -35,6 +35,7 @@ from proxystore.store.executor import ProxyAlways
 from proxystore.store.executor import ProxyNever
 from proxystore.store.executor import ProxyType
 from proxystore.store.executor import StoreExecutor
+from proxystore.store.ref import OwnedProxy
 
 P = ParamSpec('P')
 R = TypeVar('R')
@@ -137,6 +138,43 @@ def test_proxy_behavior(
     # be empty.
     if ownership:
         assert len(os.listdir(tmp_path)) == 0
+
+    store.close()
+
+
+def _identity(x: R) -> R:
+    return x
+
+
+def _length(*, x: list[int]) -> int:
+    return len(x)
+
+
+def test_owned_proxies_are_not_proxied_again() -> None:
+    connector = LocalConnector()
+    store = Store(connector)
+
+    with StoreExecutor(
+        ThreadPoolExecutor(max_workers=1),
+        store,
+        should_proxy=ProxyAlways(),
+        close_store=False,
+    ) as executor:
+        owned = executor.submit(list, [1, 2]).result()
+        assert isinstance(owned, OwnedProxy)
+
+        # Proxying the owned proxy again would move its ownership and
+        # make it invalid.
+        assert executor.submit(_identity, owned).result() is owned
+        length = executor.submit(_length, x=owned).result()
+        assert length == 2
+        assert owned == [1, 2]
+        assert len(connector._store) == 2
+
+    del owned, length
+    gc.collect()
+    evictions.wait()
+    assert len(connector._store) == 0
 
     store.close()
 

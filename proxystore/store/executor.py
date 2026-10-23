@@ -105,7 +105,7 @@ class _FunctionWrapper(Generic[P, R]):
     def __call__(self, *args: P.args, **kwargs: P.kwargs) -> R | Proxy[R]:
         result = self.function(*args, **kwargs)
 
-        if type(result) is not Proxy and self.should_proxy(result):
+        if not isinstance(result, Proxy) and self.should_proxy(result):
             store = self.get_store()
             return (
                 store.owned_proxy(result)
@@ -127,7 +127,7 @@ def _proxy_iterable(
     # Keys of new proxies are appended to keys as they are made so the
     # caller can evict them if proxying a later item fails.
     def _apply(item: Any) -> Any:
-        if type(item) is not Proxy and should_proxy(item):
+        if not isinstance(item, Proxy) and should_proxy(item):
             proxy = store.proxy(item)
             keys.append(get_key(proxy))
             return proxy
@@ -144,7 +144,7 @@ def _proxy_mapping(
 ) -> dict[Any, Any]:
     output = {}
     for key, value in mapping.items():
-        if type(value) is not Proxy and should_proxy(value):
+        if not isinstance(value, Proxy) and should_proxy(value):
             proxy = store.proxy(value)
             keys.append(get_key(proxy))
             output[key] = proxy
