@@ -15,6 +15,7 @@ import pytest
 from proxystore.connectors.file import FileConnector
 from proxystore.proxy import is_resolved
 from proxystore.store import Store
+from proxystore.store._evictions import evictions
 from proxystore.store.ref import borrow
 from proxystore.store.ref import mut_borrow
 from proxystore.store.ref import ReferenceInvalidError
@@ -34,13 +35,18 @@ def store(
         populate_target=False,
     ) as store:
         yield store
+        # Owned proxies freed by the test evict their objects in the
+        # background.
+        evictions.wait()
         if not store_is_empty(store):  # pragma: no cover
             raise RuntimeError('Test left objects in the store.')
 
 
 def store_is_empty(store: Store[FileConnector]) -> bool:
     files = [
-        f for f in os.listdir(store.connector.store_dir) if os.path.isfile(f)
+        f
+        for f in os.listdir(store.connector.store_dir)
+        if os.path.isfile(os.path.join(store.connector.store_dir, f))
     ]
     return len(files) == 0
 
